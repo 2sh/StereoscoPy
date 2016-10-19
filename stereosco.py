@@ -183,7 +183,7 @@ def main():
 			images[i] = resize(images[i], args.resize, args.offset)
 	
 	if args.anaglyph:
-		output = to_anaglyph(images, COLOR_MATRICES[args.anaglyph])
+		output = create_anaglyph(images, COLOR_MATRICES[args.anaglyph])
 		output.save(args.image_output)
 	else:
 		if not (args.is_cross_eye or args.is_parallel or
