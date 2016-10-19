@@ -42,12 +42,24 @@ def fix_orientation(image):
 	else:
 		return image
 
-def crop(image, sides):
+def align(images, xy):
+	x, y = xy
+	x_right = abs(x) if x>0 else 0
+	x_left = abs(x) if x<0 else 0
+	y_up = abs(y) if y>0 else 0
+	y_down = abs(y) if y<0 else 0
+	
+	return [
+		crop(images[0], (y_down, x_left, y_up, x_right)),
+		crop(images[1], (y_up, x_right, y_down, x_left))]
+	
+def crop(image, trbl):
+	top, right, bottom, left = trbl
 	return image.crop((
-		to_pixels(sides[3], image.size[1]),
-		to_pixels(sides[0], image.size[0]),
-		image.size[0]-to_pixels(sides[1], image.size[1]),
-		image.size[1]-to_pixels(sides[2], image.size[0])))
+		to_pixels(left, image.size[1]),
+		to_pixels(top, image.size[0]),
+		image.size[0]-to_pixels(right, image.size[1]),
+		image.size[1]-to_pixels(bottom, image.size[0])))
 
 def resize(image, size, offset="50%"):
 	width_ratio = size[0]/image.size[0]
@@ -112,12 +124,13 @@ def create_anaglyph(images, color_matrix):
 	m = color_matrix
 	for y in range(0, output.size[1]):
 		for x in range(0, output.size[0]):
-			lr, lg, lb = left[x, y]
-			rr, rg, rb = right[x, y]
+			lr, lg, lb, la = left[x, y]
+			rr, rg, rb, ra = right[x, y]
 			left[x, y] = (
 				round(lr*m[0][0] + lg*m[0][1] + lb*m[0][2] + rr*m[1][0] + rg*m[1][1] + rb*m[1][2]),
 				round(lr*m[0][3] + lg*m[0][4] + lb*m[0][5] + rr*m[1][3] + rg*m[1][4] + rb*m[1][5]),
-				round(lr*m[0][6] + lg*m[0][7] + lb*m[0][8] + rr*m[1][6] + rg*m[1][7] + rb*m[1][8]))
+				round(lr*m[0][6] + lg*m[0][7] + lb*m[0][8] + rr*m[1][6] + rg*m[1][7] + rb*m[1][8]),
+				max(la, lb))
 	return output
 
 def save_as_wiggle_image(output_file, images, total_duration=200):
@@ -137,44 +150,54 @@ def main():
 		metavar="OUT2", nargs='?', type=str,
 		help="optional second output image for split left and right")
 	
-	parser.add_argument("-x", "--cross-eye",
+	parser.add_argument("-X", "--cross-eye",
 		dest='is_cross_eye', action='store_true',
 		help="cross-eye output: Right/Left")
-	parser.add_argument("-p", "--parallel",
+	parser.add_argument("-P", "--parallel",
 		dest='is_parallel',  action='store_true',
 		help="Parallel output: Left/Right")
-	parser.add_argument("-o", "--over-under",
+	parser.add_argument("-O", "--over-under",
 		dest='is_over_under', action='store_true',
 		help="Over/under output: Left is over and right is under")
-	parser.add_argument("-u", "--under-over",
+	parser.add_argument("-U", "--under-over",
 		dest='is_under_over', action='store_true',
 		help="Under/Over output: Left is under and right is over")
 	
-	parser.add_argument("-s", "--squash",
+	parser.add_argument("-S", "--squash",
 		dest='is_squash', action='store_true',
 		help="Squash the two sides to make an image of size equal to that of the sides")
 		
-	parser.add_argument("-a", "--anaglyph",
+	parser.add_argument("-A", "--anaglyph",
 		dest='anaglyph', nargs="?", type=str, metavar="method", const="dubois-red-cyan", 
-		help="Anaglyph output with a choice of following methods: " +
+		help="Anaglyph output with a choice of the following methods: " +
 			", ".join(sorted(COLOR_MATRICES.keys())) + " (default method: %(const)s)")
 	
-	parser.add_argument("-w", "--wiggle",
+	parser.add_argument("-W", "--wiggle",
 		dest='wiggle', nargs="?", type=int, metavar="duration", const=200, 
-		help="Wiggle (gif) image with total duration in milliseconds (default method: %(const)s)")
-
+		help="Wiggle (gif) image with total duration in milliseconds (default: %(const)s)")
+	
+	parser.add_argument("-t", "--rotate",
+		dest='rotate', type=int,
+		nargs=2, metavar=("LEFT", "RIGHT"), default=(0, 0),
+		help="Rotate images in degrees")
+	
+	parser.add_argument("-a", "--align",
+		dest='align', type=int,
+		nargs=2, metavar=("X", "Y"), default=(0, 0),
+		help="Align right image in relation to left image")
+	
 	parser.add_argument("-c", "--crop",
 		dest='crop', type=str,
 		nargs=4, metavar=("TOP", "RIGHT", "BOTTOM", "LEFT"), default=(0, 0, 0, 0),
 		help="Crop both images in either pixels or percentage")
-
+	
 	parser.add_argument("-r", "--resize",
 		dest='resize', type=int,
 		nargs=2, metavar=("WIDTH", "HEIGHT"), default=(0, 0),
 		help="Resize both images to WIDTHxHEIGHT: A side with 0 is calculated automatically to preserve aspect ratio")
-	parser.add_argument("-f", "--offset",
+	parser.add_argument("-o", "--offset",
 		dest='offset', type=str, default="50%",
-		help="Offset after resize from top or left in either pixels or percentage (default: %(default)s)")
+		help="Resize offset from top or left in either pixels or percentage (default: %(default)s)")
 	
 	args = parser.parse_args()
 
@@ -182,7 +205,15 @@ def main():
 
 	for i, _ in enumerate(images):
 		images[i] = fix_orientation(images[i])
+		images[i] = images[i].convert("RGBA")
 		
+		if args.rotate and args.rotate[i]:
+			images[i] = images[i].rotate(args.rotate[i], Image.BICUBIC, True)
+		
+	if any(args.align):
+		images = align(images, args.align)
+		
+	for i, _ in enumerate(images):
 		if any(args.crop):
 			images[i] = crop(images[i], args.crop)
 		
