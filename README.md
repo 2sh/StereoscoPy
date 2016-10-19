@@ -19,7 +19,7 @@ python3 stereosco.py DSC_0611.JPG DSC_0610.JPG -c 20% 0 0 0 -r 1920 1080 -f 100%
 python3 stereosco.py DSC_0611.JPG DSC_0610.JPG -c 20% 0 0 0 -r 1920 1080 -f 100% -ps
 ```
 
-###Anagraph
+###Anaglyph
 ```
 python3 stereosco.py DSC_0596.JPG DSC_0597.JPG out.jpg -c 20% 40% 15% 40% -r 1920 1080 -a color
 ```
