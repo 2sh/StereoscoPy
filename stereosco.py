@@ -120,6 +120,9 @@ def create_anaglyph(images, color_matrix):
 				round(lr*m[0][6] + lg*m[0][7] + lb*m[0][8] + rr*m[1][6] + rg*m[1][7] + rb*m[1][8]))
 	return output
 
+def save_as_wiggle_image(output_file, images, total_duration=200):
+	images[0].save(output_file, save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
+
 def main():
 	import argparse
 	parser = argparse.ArgumentParser(description="Convert 2 images into a stereoscopic 3D image")
@@ -155,6 +158,10 @@ def main():
 		dest='anaglyph', nargs="?", type=str, metavar="method", const="dubois-red-cyan", 
 		help="Anaglyph output with a choice of following methods: " +
 			", ".join(sorted(COLOR_MATRICES.keys())) + " (default method: %(const)s)")
+	
+	parser.add_argument("-w", "--wiggle",
+		dest='wiggle', nargs="?", type=int, metavar="duration", const=200, 
+		help="Wiggle (gif) image with total duration in milliseconds (default method: %(const)s)")
 
 	parser.add_argument("-c", "--crop",
 		dest='crop', type=str,
@@ -185,6 +192,8 @@ def main():
 	if args.anaglyph:
 		output = create_anaglyph(images, COLOR_MATRICES[args.anaglyph])
 		output.save(args.image_output)
+	elif args.wiggle:
+		save_as_wiggle_image(args.image_output, images, args.wiggle)
 	else:
 		if not (args.is_cross_eye or args.is_parallel or
 			args.is_over_under or args.is_under_over):

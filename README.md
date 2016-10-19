@@ -1,10 +1,10 @@
 # Stereosco.py
 This is a Python script/library for converting two images into a stereoscopic 3D image.
-The stereoscopic output methods are currently anagraph, side-by-side (cross-eye and parallel) and over/under.
+The stereoscopic output methods are currently anagraph, side-by-side (cross-eye and parallel), over/under and wiggle GIF.
 
 ##Requirements
 * Python3
-* PIP
+* Pillow
 
 ##Command-Line Examples
 ###Cross-eyed (Right/Left)
