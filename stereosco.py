@@ -100,7 +100,7 @@ def join(images, horizontal=True):
 		size = (images[0].size[0], images[0].size[1]*2)
 		pos = (0, images[0].size[1])
 	
-	output = Image.new("RGB", size)
+	output = Image.new("RGBA", size)
 	output.paste(images[0], (0, 0))
 	output.paste(images[1], pos)
 	return output
@@ -120,7 +120,8 @@ def create_anaglyph(images, matrices):
 	
 	if len(left_bands) > 3 and len(right_bands) > 3:
 		output_bands.append(ImageChops.lighter(left_bands[3], right_bands[3]))
-	return Image.merge(images[0].mode, output_bands)
+		return Image.merge("RGBA", output_bands)
+	return Image.merge("RGB", output_bands)
 
 ANAGLYPH_MATRICES = OrderedDict([
 	("true", (
