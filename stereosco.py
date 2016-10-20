@@ -17,7 +17,8 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from PIL import Image
+from PIL import Image, ImageChops, ImageMath
+from collections import OrderedDict
 
 def to_pixels(value, reference):
 	try:
@@ -104,39 +105,67 @@ def join(images, horizontal=True):
 	output.paste(images[1], pos)
 	return output
 
-COLOR_MATRICES = {
-	"true": ((0.299, 0.587, 0.114, 0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0, 0.299, 0.587, 0.114)),
-	"gray": ((0.299, 0.587, 0.114, 0, 0, 0, 0, 0, 0), (0, 0, 0, 0.299, 0.587, 0.114, 0.299, 0.587, 0.114)),
-	"color": ((1, 0, 0, 0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 1, 0, 0, 0, 1)),
-	"half-color": ((0.299, 0.587, 0.114, 0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 1, 0, 0, 0, 1)),
-	"optimized": ((0, 0.7, 0.3, 0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 1, 0, 0, 0, 1)),
-	"dubois-red-cyan": ((0.456, 0.500, 0.175, -0.040, -0.038, -0.016, -0.015, -0.021, -0.005), (-0.043, -0.088, -0.002, 0.378, 0.734, -0.018, -0.072, -0.113, 1.226)),
-	"dubois-red-cyan2": ((0.437, 0.449, 0.164, -0.062, -0.062, -0.024, -0.048, -0.050, -0.017), (-0.011, -0.032, -0.007, 0.377, 0.761, 0.009, -0.026, -0.093, 1.234)),
-	"dubois-green-magenta": ((-0.062, -0.158, -0.039, 0.284, 0.668, 0.143, -0.015, -0.027, 0.021), (0.529, 0.705, 0.024, -0.016, -0.015, -0.065, 0.009, 0.075, 0.937)),
-	"dubois-amber-blue": ((1.062, -0.205, 0.299, -0.026, 0.908, 0.068, -0.038, -0.173, 0.022), (-0.016, -0.123, -0.017, 0.006, 0.062, -0.017, 0.094, 0.185, 0.911))
-}
+class AnaglyphByMatrix:
+	def __init__(self, left_matrix, right_matrix):
+		self.left_matrix = left_matrix
+		self.right_matrix = right_matrix
+		
+	def create(self, images):
+		left_bands = images[0].split()
+		right_bands = images[1].split()
+		
+		output_bands = list()
+		for i in range(0, 9, 3):
+			output_bands.append(ImageMath.eval(("convert(" +
+				"(float(lr)*{0[0]})+(float(lg)*{0[1]})+(float(lb)*{0[2]})+" +
+				"(float(rr)*{1[0]})+(float(rg)*{1[1]})+(float(rb)*{1[2]}), 'L')")
+					.format(self.left_matrix[i:i+3], self.right_matrix[i:i+3]),
+				lr=left_bands[0], lg=left_bands[1], lb=left_bands[2],
+				rr=right_bands[0], rg=right_bands[1], rb=right_bands[2]))
+		
+		if len(left_bands) > 3 and len(right_bands) > 3:
+			output_bands.append(ImageChops.lighter(left_bands[3], right_bands[3]))
+		return Image.merge(images[0].mode, output_bands)
 
-def create_anaglyph(images, color_matrix):
-	output = images[0].copy()
-	left = output.load()
-	right = images[1].load()
-	
-	m = color_matrix
-	for y in range(0, output.size[1]):
-		for x in range(0, output.size[0]):
-			lr, lg, lb, la = left[x, y]
-			rr, rg, rb, ra = right[x, y]
-			left[x, y] = (
-				round(lr*m[0][0] + lg*m[0][1] + lb*m[0][2] + rr*m[1][0] + rg*m[1][1] + rb*m[1][2]),
-				round(lr*m[0][3] + lg*m[0][4] + lb*m[0][5] + rr*m[1][3] + rg*m[1][4] + rb*m[1][5]),
-				round(lr*m[0][6] + lg*m[0][7] + lb*m[0][8] + rr*m[1][6] + rg*m[1][7] + rb*m[1][8]),
-				max(la, lb))
-	return output
+ANAGLYPH_MATRICES = OrderedDict([
+	("true", (
+		(0.299, 0.587, 0.114,  0, 0, 0,  0, 0, 0),
+		(0, 0, 0,  0, 0, 0,  0.299, 0.587, 0.114))),
+	("gray", (
+		(0.299, 0.587, 0.114,  0, 0, 0,  0, 0, 0),
+		(0, 0, 0,  0.299, 0.587, 0.114,  0.299, 0.587, 0.114))),
+	("color", (
+		(1, 0, 0,  0, 0, 0,  0, 0, 0),
+		(0, 0, 0,  0, 1, 0,  0, 0, 1))),
+	("half-color", (
+		(0.299, 0.587, 0.114,  0, 0, 0,  0, 0, 0),
+		(0, 0, 0,  0, 1, 0,  0, 0, 1))),
+	("optimized", (
+		(0, 0.7, 0.3,  0, 0, 0,  0, 0, 0),
+		(0, 0, 0,  0, 1, 0,  0, 0, 1))),
+	("dubois-red-cyan", (
+		(0.456, 0.500, 0.175,  -0.040, -0.038, -0.016,  -0.015, -0.021, -0.005),
+		(-0.043, -0.088, -0.002,  0.378, 0.734, -0.018,  -0.072, -0.113, 1.226))),
+	("dubois-red-cyan2", (
+		(0.437, 0.449, 0.164,  -0.062, -0.062, -0.024,  -0.048, -0.050, -0.017),
+		(-0.011, -0.032, -0.007,  0.377, 0.761, 0.009,  -0.026, -0.093, 1.234))),
+	("dubois-green-magenta", (
+		(-0.062, -0.158, -0.039,  0.284, 0.668, 0.143,  -0.015, -0.027, 0.021),
+		(0.529, 0.705, 0.024,  -0.016, -0.015, -0.065,  0.009, 0.075, 0.937))),
+	("dubois-amber-blue", (
+		(1.062, -0.205, 0.299,  -0.026, 0.908, 0.068,  -0.038, -0.173, 0.022),
+		(-0.016, -0.123, -0.017,  0.006, 0.062, -0.017,  0.094, 0.185, 0.911)))
+])
 
 def save_as_wiggle_image(output_file, images, total_duration=200):
 	images[0].save(output_file, save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
 
+
 def main():
+	anaglyph_methods=OrderedDict()
+	for name, m in ANAGLYPH_MATRICES.items():
+		anaglyph_methods[name] = AnaglyphByMatrix(*m)
+	
 	import argparse
 	parser = argparse.ArgumentParser(description="Convert 2 images into a stereoscopic 3D image")
 
@@ -166,11 +195,11 @@ def main():
 	parser.add_argument("-S", "--squash",
 		dest='is_squash', action='store_true',
 		help="Squash the two sides to make an image of size equal to that of the sides")
-		
+	
 	parser.add_argument("-A", "--anaglyph",
 		dest='anaglyph', nargs="?", type=str, metavar="method", const="dubois-red-cyan", 
 		help="Anaglyph output with a choice of the following methods: " +
-			", ".join(sorted(COLOR_MATRICES.keys())) + " (default method: %(const)s)")
+			", ".join(anaglyph_methods.keys()) + " (default method: %(const)s)")
 	
 	parser.add_argument("-W", "--wiggle",
 		dest='wiggle', nargs="?", type=int, metavar="duration", const=200, 
@@ -202,10 +231,12 @@ def main():
 	args = parser.parse_args()
 
 	images = [Image.open(args.image_left), Image.open(args.image_right)]
-
+	
 	for i, _ in enumerate(images):
 		images[i] = fix_orientation(images[i])
-		images[i] = images[i].convert("RGBA")
+		
+		if images[i].mode != "RGB" or images[i].mode != "RGBA":
+			images[i] = images[i].convert("RGBA")
 		
 		if args.rotate and args.rotate[i]:
 			images[i] = images[i].rotate(args.rotate[i], Image.BICUBIC, True)
@@ -221,7 +252,7 @@ def main():
 			images[i] = resize(images[i], args.resize, args.offset)
 	
 	if args.anaglyph:
-		output = create_anaglyph(images, COLOR_MATRICES[args.anaglyph])
+		output = anaglyph_methods[args.anaglyph].create(images)
 		output.save(args.image_output)
 	elif args.wiggle:
 		save_as_wiggle_image(args.image_output, images, args.wiggle)
