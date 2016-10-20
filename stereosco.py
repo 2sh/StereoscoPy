@@ -105,27 +105,22 @@ def join(images, horizontal=True):
 	output.paste(images[1], pos)
 	return output
 
-class AnaglyphByMatrix:
-	def __init__(self, left_matrix, right_matrix):
-		self.left_matrix = left_matrix
-		self.right_matrix = right_matrix
-		
-	def create(self, images):
-		left_bands = images[0].split()
-		right_bands = images[1].split()
-		
-		output_bands = list()
-		for i in range(0, 9, 3):
-			output_bands.append(ImageMath.eval(("convert(" +
-				"(float(lr)*{0[0]})+(float(lg)*{0[1]})+(float(lb)*{0[2]})+" +
-				"(float(rr)*{1[0]})+(float(rg)*{1[1]})+(float(rb)*{1[2]}), 'L')")
-					.format(self.left_matrix[i:i+3], self.right_matrix[i:i+3]),
-				lr=left_bands[0], lg=left_bands[1], lb=left_bands[2],
-				rr=right_bands[0], rg=right_bands[1], rb=right_bands[2]))
-		
-		if len(left_bands) > 3 and len(right_bands) > 3:
-			output_bands.append(ImageChops.lighter(left_bands[3], right_bands[3]))
-		return Image.merge(images[0].mode, output_bands)
+def create_anaglyph(images, matrices):
+	left_bands = images[0].split()
+	right_bands = images[1].split()
+	
+	output_bands = list()
+	for i in range(0, 9, 3):
+		output_bands.append(ImageMath.eval(("convert(" +
+			"(float(lr)*{0[0]})+(float(lg)*{0[1]})+(float(lb)*{0[2]})+" +
+			"(float(rr)*{1[0]})+(float(rg)*{1[1]})+(float(rb)*{1[2]}), 'L')")
+				.format(matrices[0][i:i+3], matrices[1][i:i+3]),
+			lr=left_bands[0], lg=left_bands[1], lb=left_bands[2],
+			rr=right_bands[0], rg=right_bands[1], rb=right_bands[2]))
+	
+	if len(left_bands) > 3 and len(right_bands) > 3:
+		output_bands.append(ImageChops.lighter(left_bands[3], right_bands[3]))
+	return Image.merge(images[0].mode, output_bands)
 
 ANAGLYPH_MATRICES = OrderedDict([
 	("true", (
@@ -162,10 +157,6 @@ def save_as_wiggle_image(output_file, images, total_duration=200):
 
 
 def main():
-	anaglyph_methods=OrderedDict()
-	for name, m in ANAGLYPH_MATRICES.items():
-		anaglyph_methods[name] = AnaglyphByMatrix(*m)
-	
 	import argparse
 	parser = argparse.ArgumentParser(description="Convert 2 images into a stereoscopic 3D image")
 
@@ -199,7 +190,7 @@ def main():
 	parser.add_argument("-A", "--anaglyph",
 		dest='anaglyph', nargs="?", type=str, metavar="method", const="dubois-red-cyan", 
 		help="Anaglyph output with a choice of the following methods: " +
-			", ".join(anaglyph_methods.keys()) + " (default method: %(const)s)")
+			", ".join(ANAGLYPH_MATRICES.keys()) + " (default method: %(const)s)")
 	
 	parser.add_argument("-W", "--wiggle",
 		dest='wiggle', nargs="?", type=int, metavar="duration", const=200, 
@@ -252,7 +243,7 @@ def main():
 			images[i] = resize(images[i], args.resize, args.offset)
 	
 	if args.anaglyph:
-		output = anaglyph_methods[args.anaglyph].create(images)
+		output = create_anaglyph(images, ANAGLYPH_MATRICES[args.anaglyph])
 		output.save(args.image_output)
 	elif args.wiggle:
 		save_as_wiggle_image(args.image_output, images, args.wiggle)
