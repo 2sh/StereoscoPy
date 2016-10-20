@@ -153,7 +153,7 @@ ANAGLYPH_MATRICES = OrderedDict([
 		(-0.016, -0.123, -0.017,  0.006, 0.062, -0.017,  0.094, 0.185, 0.911)))
 ])
 
-def save_as_wiggle_image(output_file, images, total_duration=200):
+def save_as_wiggle_gif_image(output_file, images, total_duration=200):
 	images[0].save(output_file, save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
 
 
@@ -194,8 +194,8 @@ def main():
 			", ".join(ANAGLYPH_MATRICES.keys()) + " (default method: %(const)s)")
 	
 	parser.add_argument("-W", "--wiggle",
-		dest='wiggle', nargs="?", type=int, metavar="duration", const=200, 
-		help="Wiggle (gif) image with total duration in milliseconds (default: %(const)s)")
+		dest='wiggle', nargs="?", type=int, metavar="DURATION", const=200, 
+		help="Wiggle GIF image with total duration in milliseconds (default: %(const)s)")
 	
 	parser.add_argument("-t", "--rotate",
 		dest='rotate', type=int,
@@ -247,7 +247,7 @@ def main():
 		output = create_anaglyph(images, ANAGLYPH_MATRICES[args.anaglyph])
 		output.save(args.image_output)
 	elif args.wiggle:
-		save_as_wiggle_image(args.image_output, images, args.wiggle)
+		save_as_wiggle_gif_image(args.image_output, images, args.wiggle)
 	else:
 		if not (args.is_cross_eye or args.is_parallel or
 			args.is_over_under or args.is_under_over):
