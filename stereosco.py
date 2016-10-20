@@ -157,6 +157,18 @@ def save_as_wiggle_gif_image(output_file, images, total_duration=200):
 	images[0].save(output_file, save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
 
 
+def create_interlaced_image(images, right_is_odd=True):
+	output = images[0].copy()
+	o = output.load()
+	r = images[1].load()
+	
+	for x in range(output.size[0]):
+		for y in range(output.size[1]):
+			if y % 2 == right_is_odd:
+				o[x,y] = r[x,y]
+	return output
+
+
 def main():
 	import argparse
 	parser = argparse.ArgumentParser(description="Convert 2 images into a stereoscopic 3D image")
@@ -189,13 +201,17 @@ def main():
 		help="Squash the two sides to make an image of size equal to that of the sides")
 	
 	parser.add_argument("-A", "--anaglyph",
-		dest='anaglyph', nargs="?", type=str, metavar="method", const="dubois-red-cyan", 
+		dest='anaglyph', nargs="?", type=str, metavar="METHOD", const="dubois-red-cyan", 
 		help="Anaglyph output with a choice of the following methods: " +
 			", ".join(ANAGLYPH_MATRICES.keys()) + " (default method: %(const)s)")
 	
 	parser.add_argument("-W", "--wiggle",
 		dest='wiggle', nargs="?", type=int, metavar="DURATION", const=200, 
 		help="Wiggle GIF image with total duration in milliseconds (default: %(const)s)")
+	
+	parser.add_argument("-I", "--interlaced",
+		dest='interlaced', nargs="?", type=str, metavar="EVEN/ODD", const="odd",
+		help="Interlaced output with right image being either the even or odd line (default: %(const)s)")
 	
 	parser.add_argument("-t", "--rotate",
 		dest='rotate', type=int,
@@ -248,6 +264,9 @@ def main():
 		output.save(args.image_output)
 	elif args.wiggle:
 		save_as_wiggle_gif_image(args.image_output, images, args.wiggle)
+	elif args.interlaced:
+		output = create_interlaced_image(images, args.interlaced!="even")
+		output.save(args.image_output)
 	else:
 		if not (args.is_cross_eye or args.is_parallel or
 			args.is_over_under or args.is_under_over):
