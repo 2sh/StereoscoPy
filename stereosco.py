@@ -214,7 +214,7 @@ def main():
 		help="Interlaced output with right image being either the even or odd line (default: %(const)s)")
 	
 	parser.add_argument("-t", "--rotate",
-		dest='rotate', type=int,
+		dest='rotate', type=float,
 		nargs=2, metavar=("LEFT", "RIGHT"), default=(0, 0),
 		help="Rotate images in degrees")
 	
