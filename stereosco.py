@@ -156,16 +156,22 @@ ANAGLYPH_MATRICES = OrderedDict([
 def save_as_wiggle_gif_image(output_file, images, total_duration=200):
 	images[0].save(output_file, save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
 
-
-def create_interlaced_image(images, right_is_odd=True):
+def create_patterened_image(images, pattern=1, left_is_even=True):
 	output = images[0].copy()
 	o = output.load()
 	r = images[1].load()
 	
 	for x in range(output.size[0]):
 		for y in range(output.size[1]):
-			if y % 2 == right_is_odd:
-				o[x,y] = r[x,y]
+			if pattern == 0:
+				if (x + y) % 2 != left_is_even:
+					o[x,y] = r[x,y]
+			elif pattern == 1:
+				if y % 2 != left_is_even:
+					o[x,y] = r[x,y]
+			elif pattern == 2:
+				if x % 2 != left_is_even:
+					o[x,y] = r[x,y]
 	return output
 
 
@@ -183,56 +189,67 @@ def main():
 		metavar="OUT2", nargs='?', type=str,
 		help="optional second output image for split left and right")
 	
-	parser.add_argument("-X", "--cross-eye",
+	group = parser.add_argument_group('Side-by-side')
+	group.add_argument("-X", "--cross-eye",
 		dest='is_cross_eye', action='store_true',
 		help="cross-eye output: Right/Left")
-	parser.add_argument("-P", "--parallel",
+	group.add_argument("-P", "--parallel",
 		dest='is_parallel',  action='store_true',
 		help="Parallel output: Left/Right")
-	parser.add_argument("-O", "--over-under",
+	group.add_argument("-O", "--over-under",
 		dest='is_over_under', action='store_true',
 		help="Over/under output: Left is over and right is under")
-	parser.add_argument("-U", "--under-over",
+	group.add_argument("-U", "--under-over",
 		dest='is_under_over', action='store_true',
 		help="Under/Over output: Left is under and right is over")
 	
-	parser.add_argument("-S", "--squash",
+	group.add_argument("-S", "--squash",
 		dest='is_squash', action='store_true',
 		help="Squash the two sides to make an image of size equal to that of the sides")
 	
-	parser.add_argument("-A", "--anaglyph",
+	group = parser.add_argument_group('Encoded')
+	group.add_argument("-A", "--anaglyph",
 		dest='anaglyph', nargs="?", type=str, metavar="METHOD", const="dubois-red-cyan", 
 		help="Anaglyph output with a choice of the following methods: " +
 			", ".join(ANAGLYPH_MATRICES.keys()) + " (default method: %(const)s)")
 	
-	parser.add_argument("-W", "--wiggle",
+	group = parser.add_argument_group('Animated')
+	group.add_argument("-W", "--wiggle",
 		dest='wiggle', nargs="?", type=int, metavar="DURATION", const=200, 
 		help="Wiggle GIF image with total duration in milliseconds (default: %(const)s)")
 	
-	parser.add_argument("-I", "--interlaced",
-		dest='interlaced', nargs="?", type=str, metavar="EVEN/ODD", const="odd",
-		help="Interlaced output with right image being either the even or odd line (default: %(const)s)")
+	group = parser.add_argument_group('Patterened')
+	group.add_argument("-I", "--interlaced-h",
+		dest='interlaced_horizontal', nargs="?", type=str, metavar="EVEN/ODD", const="even",
+		help="Horizontally interlaced output with the left image being either the even or odd line (default: %(const)s)")
+	group.add_argument("-V", "--interlaced-v",
+		dest='interlaced_vertical', nargs="?", type=str, metavar="EVEN/ODD", const="even",
+		help="Vertically interlaced output with the left image being either the even or odd line (default: %(const)s)")
+	group.add_argument("-C", "--checkerboard",
+		dest='checkerboard', nargs="?", type=str, metavar="EVEN/ODD", const="even",
+		help="Checkerboard output with the left image being either the even or odd square (default: %(const)s)")
 	
-	parser.add_argument("-t", "--rotate",
+	group = parser.add_argument_group('Preprocessing')
+	group.add_argument("-t", "--rotate",
 		dest='rotate', type=float,
 		nargs=2, metavar=("LEFT", "RIGHT"), default=(0, 0),
 		help="Rotate images in degrees")
 	
-	parser.add_argument("-a", "--align",
+	group.add_argument("-a", "--align",
 		dest='align', type=int,
 		nargs=2, metavar=("X", "Y"), default=(0, 0),
 		help="Align right image in relation to left image")
 	
-	parser.add_argument("-c", "--crop",
+	group.add_argument("-c", "--crop",
 		dest='crop', type=str,
 		nargs=4, metavar=("TOP", "RIGHT", "BOTTOM", "LEFT"), default=(0, 0, 0, 0),
 		help="Crop both images in either pixels or percentage")
 	
-	parser.add_argument("-r", "--resize",
+	group.add_argument("-r", "--resize",
 		dest='resize', type=int,
 		nargs=2, metavar=("WIDTH", "HEIGHT"), default=(0, 0),
 		help="Resize both images to WIDTHxHEIGHT: A side with 0 is calculated automatically to preserve aspect ratio")
-	parser.add_argument("-o", "--offset",
+	group.add_argument("-o", "--offset",
 		dest='offset', type=str, default="50%",
 		help="Resize offset from top or left in either pixels or percentage (default: %(default)s)")
 	
@@ -264,8 +281,14 @@ def main():
 		output.save(args.image_output)
 	elif args.wiggle:
 		save_as_wiggle_gif_image(args.image_output, images, args.wiggle)
-	elif args.interlaced:
-		output = create_interlaced_image(images, args.interlaced!="even")
+	elif args.interlaced_horizontal:
+		output = create_interweaved_image(images, 1, args.interlaced_horizontal!="odd")
+		output.save(args.image_output)
+	elif args.interlaced_vertical:
+		output = create_patterened_image(images, 2, args.interlaced_vertical!="odd")
+		output.save(args.image_output)
+	elif args.checkerboard:
+		output = create_patterened_image(images, 0, args.checkerboard!="odd")
 		output.save(args.image_output)
 	else:
 		if not (args.is_cross_eye or args.is_parallel or
