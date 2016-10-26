@@ -176,6 +176,7 @@ def create_patterened_image(images, pattern=1, left_is_even=True):
 
 
 def main():
+	import sys
 	import argparse
 	parser = argparse.ArgumentParser(description="Convert 2 images into a stereoscopic 3D image")
 
@@ -259,6 +260,10 @@ def main():
 		if images[i].mode != "RGB" or images[i].mode != "RGBA":
 			images[i] = images[i].convert("RGBA")
 		
+		if i > 0 and images[0].size != images[i].size:
+			print("Given images are not the same size!", file=sys.stderr)
+			exit()
+	
 	if any(args.align):
 		images = align(images, args.align)
 		
