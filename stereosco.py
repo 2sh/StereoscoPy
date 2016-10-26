@@ -316,7 +316,7 @@ def main():
 		
 		if args.squash:
 			for i, _ in enumerate(images):
-				images[0] = squash(images[0], is_horizontal)
+				images[i] = squash(images[i], is_horizontal)
 		
 		if args.cross_eye or args.under_over:
 			images.reverse()
