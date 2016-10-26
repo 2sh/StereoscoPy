@@ -230,10 +230,6 @@ def main():
 		help="Checkerboard output with the left image being either the even or odd square (default: %(const)s)")
 	
 	group = parser.add_argument_group('Preprocessing')
-	group.add_argument("-t", "--rotate",
-		dest='rotate', type=float,
-		nargs=2, metavar=("LEFT", "RIGHT"), default=(0, 0),
-		help="Rotate images in degrees")
 	
 	group.add_argument("-a", "--align",
 		dest='align', type=int,
@@ -262,9 +258,6 @@ def main():
 		
 		if images[i].mode != "RGB" or images[i].mode != "RGBA":
 			images[i] = images[i].convert("RGBA")
-		
-		if args.rotate and args.rotate[i]:
-			images[i] = images[i].rotate(args.rotate[i], Image.BICUBIC, True)
 		
 	if any(args.align):
 		images = align(images, args.align)
