@@ -92,17 +92,26 @@ def squash(image, horizontal=True):
 		new_size = (image.size[0], round(image.size[1]/2))
 	return image.resize(new_size, Image.ANTIALIAS)
 
-def join(images, horizontal=True):
+def create_side_by_side_image(images, horizontal=True, separation=0, border=0, bg_color=(255, 255, 255, 0)):
 	if horizontal:
-		size = (images[0].size[0]*2, images[0].size[1])
-		pos = (images[0].size[0], 0)
+		width = images[0].size[0] * 2 + separation
+		height = images[0].size[1]
+		r_left = images[0].size[0] + separation
+		r_top = 0
 	else:
-		size = (images[0].size[0], images[0].size[1]*2)
-		pos = (0, images[0].size[1])
+		width = images[0].size[0]
+		height = images[0].size[1] * 2 + separation
+		r_left = 0
+		r_top = images[0].size[1] + separation
 	
-	output = Image.new("RGBA", size)
-	output.paste(images[0], (0, 0))
-	output.paste(images[1], pos)
+	width += 2 * border
+	height += 2 * border
+	r_left += border
+	r_top += border
+	
+	output = Image.new("RGBA", (width, height), bg_color)
+	output.paste(images[0], (border, border))
+	output.paste(images[1], (r_left, r_top))
 	return output
 
 def create_anaglyph(images, matrices):
@@ -190,6 +199,11 @@ def main():
 		metavar="OUT2", nargs='?', type=str,
 		help="optional second output image for split left and right")
 	
+	parser.add_argument("-B", "--bg-color",
+		dest='bg_color', type=int,
+		nargs=4, metavar=("RED", "GREEN", "BLUE", "ALPHA"), default=(255, 255, 255, 0),
+		help="Set background color and transparency (alpha) with values between 0 and 255 (default: [255, 255, 255, 0] => white for JPEG or transparent for PNG)")
+	
 	group = parser.add_argument_group('Side-by-side')
 	group.add_argument("-x", "--cross-eye",
 		dest='is_cross_eye', action='store_true',
@@ -207,6 +221,12 @@ def main():
 	group.add_argument("-s", "--squash",
 		dest='is_squash', action='store_true',
 		help="Squash the two sides to make an image of size equal to that of the sides")
+	group.add_argument("-l", "--line",
+		dest='line', metavar="WIDTH", type=int, default=0,
+		help="Separate the two images by a line of a given width")
+	group.add_argument("-b", "--border",
+		dest='border', metavar="WIDTH", type=int, default=0,
+		help="Surround the output image with a border of a given width")
 	
 	group = parser.add_argument_group('Encoded')
 	group.add_argument("-a", "--anaglyph",
@@ -303,7 +323,7 @@ def main():
 			images.reverse()
 
 		if args.image_output2 is None:
-			output = join(images, is_horizontal)
+			output = create_side_by_side_image(images, is_horizontal, args.line, args.border, args.bg_color)
 			output.save(args.image_output)
 		else:
 			images[0].save(args.image_output)
