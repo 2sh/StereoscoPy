@@ -51,11 +51,11 @@ def align(images, xy):
 	y_down = abs(y) if y<0 else 0
 	
 	return [
-		crop(images[0], (y_down, x_left, y_up, x_right)),
-		crop(images[1], (y_up, x_right, y_down, x_left))]
+		crop(images[0], (x_right, y_down, x_left, y_up)),
+		crop(images[1], (x_left, y_up, x_right, y_down))]
 
-def crop(image, trbl):
-	top, right, bottom, left = trbl
+def crop(image, box):
+	left, top, right, bottom = box
 	return image.crop((
 		to_pixels(left, image.size[1]),
 		to_pixels(top, image.size[0]),
@@ -258,7 +258,7 @@ def main():
 	
 	group.add_argument("-C", "--crop",
 		dest='crop', type=str,
-		nargs=4, metavar=("TOP", "RIGHT", "BOTTOM", "LEFT"), default=(0, 0, 0, 0),
+		nargs=4, metavar=("LEFT", "TOP", "RIGHT", "BOTTOM"), default=(0, 0, 0, 0),
 		help="Crop both images in either pixels or percentage")
 	
 	group.add_argument("-R", "--resize",
