@@ -191,62 +191,62 @@ def main():
 		help="optional second output image for split left and right")
 	
 	group = parser.add_argument_group('Side-by-side')
-	group.add_argument("-X", "--cross-eye",
+	group.add_argument("-x", "--cross-eye",
 		dest='is_cross_eye', action='store_true',
 		help="cross-eye output: Right/Left")
-	group.add_argument("-P", "--parallel",
+	group.add_argument("-p", "--parallel",
 		dest='is_parallel',  action='store_true',
 		help="Parallel output: Left/Right")
-	group.add_argument("-O", "--over-under",
+	group.add_argument("-o", "--over-under",
 		dest='is_over_under', action='store_true',
 		help="Over/under output: Left is over and right is under")
-	group.add_argument("-U", "--under-over",
+	group.add_argument("-u", "--under-over",
 		dest='is_under_over', action='store_true',
 		help="Under/Over output: Left is under and right is over")
 	
-	group.add_argument("-S", "--squash",
+	group.add_argument("-s", "--squash",
 		dest='is_squash', action='store_true',
 		help="Squash the two sides to make an image of size equal to that of the sides")
 	
 	group = parser.add_argument_group('Encoded')
-	group.add_argument("-A", "--anaglyph",
+	group.add_argument("-a", "--anaglyph",
 		dest='anaglyph', nargs="?", type=str, metavar="METHOD", const="dubois-red-cyan", 
 		help="Anaglyph output with a choice of the following methods: " +
 			", ".join(ANAGLYPH_MATRICES.keys()) + " (default method: %(const)s)")
 	
 	group = parser.add_argument_group('Animated')
-	group.add_argument("-W", "--wiggle",
+	group.add_argument("-w", "--wiggle",
 		dest='wiggle', nargs="?", type=int, metavar="DURATION", const=200, 
 		help="Wiggle GIF image with total duration in milliseconds (default: %(const)s)")
 	
 	group = parser.add_argument_group('Patterened')
-	group.add_argument("-I", "--interlaced-h",
+	group.add_argument("-i", "--interlaced-h",
 		dest='interlaced_horizontal', nargs="?", type=str, metavar="EVEN/ODD", const="even",
 		help="Horizontally interlaced output with the left image being either the even or odd line (default: %(const)s)")
-	group.add_argument("-V", "--interlaced-v",
+	group.add_argument("-v", "--interlaced-v",
 		dest='interlaced_vertical', nargs="?", type=str, metavar="EVEN/ODD", const="even",
 		help="Vertically interlaced output with the left image being either the even or odd line (default: %(const)s)")
-	group.add_argument("-C", "--checkerboard",
+	group.add_argument("-c", "--checkerboard",
 		dest='checkerboard', nargs="?", type=str, metavar="EVEN/ODD", const="even",
 		help="Checkerboard output with the left image being either the even or odd square (default: %(const)s)")
 	
 	group = parser.add_argument_group('Preprocessing')
 	
-	group.add_argument("-a", "--align",
+	group.add_argument("-A", "--align",
 		dest='align', type=int,
 		nargs=2, metavar=("X", "Y"), default=(0, 0),
 		help="Align right image in relation to left image")
 	
-	group.add_argument("-c", "--crop",
+	group.add_argument("-C", "--crop",
 		dest='crop', type=str,
 		nargs=4, metavar=("TOP", "RIGHT", "BOTTOM", "LEFT"), default=(0, 0, 0, 0),
 		help="Crop both images in either pixels or percentage")
 	
-	group.add_argument("-r", "--resize",
+	group.add_argument("-R", "--resize",
 		dest='resize', type=int,
 		nargs=2, metavar=("WIDTH", "HEIGHT"), default=(0, 0),
 		help="Resize both images to WIDTHxHEIGHT: A side with 0 is calculated automatically to preserve aspect ratio")
-	group.add_argument("-o", "--offset",
+	group.add_argument("-O", "--offset",
 		dest='offset', type=str, default="50%",
 		help="Resize offset from top or left in either pixels or percentage (default: %(default)s)")
 	
