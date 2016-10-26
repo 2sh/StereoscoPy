@@ -53,7 +53,7 @@ def align(images, xy):
 	return [
 		crop(images[0], (y_down, x_left, y_up, x_right)),
 		crop(images[1], (y_up, x_right, y_down, x_left))]
-	
+
 def crop(image, trbl):
 	top, right, bottom, left = trbl
 	return image.crop((
@@ -188,7 +188,7 @@ def main():
 	import sys
 	import argparse
 	parser = argparse.ArgumentParser(description="Convert 2 images into a stereoscopic 3D image")
-
+	
 	parser.add_argument("image_left",
 		metavar="LEFT", type=str, help="left image")
 	parser.add_argument("image_right",
@@ -206,20 +206,20 @@ def main():
 	
 	group = parser.add_argument_group('Side-by-side')
 	group.add_argument("-x", "--cross-eye",
-		dest='is_cross_eye', action='store_true',
+		dest='cross_eye', action='store_true',
 		help="cross-eye output: Right/Left")
 	group.add_argument("-p", "--parallel",
-		dest='is_parallel',  action='store_true',
+		dest='parallel',  action='store_true',
 		help="Parallel output: Left/Right")
 	group.add_argument("-o", "--over-under",
-		dest='is_over_under', action='store_true',
+		dest='over_under', action='store_true',
 		help="Over/under output: Left is over and right is under")
 	group.add_argument("-u", "--under-over",
-		dest='is_under_over', action='store_true',
+		dest='under_over', action='store_true',
 		help="Under/Over output: Left is under and right is over")
 	
 	group.add_argument("-s", "--squash",
-		dest='is_squash', action='store_true',
+		dest='squash', action='store_true',
 		help="Squash the two sides to make an image of size equal to that of the sides")
 	group.add_argument("-l", "--line",
 		dest='line', metavar="WIDTH", type=int, default=0,
@@ -251,7 +251,6 @@ def main():
 		help="Checkerboard output with the left image being either the even or odd square (default: %(const)s)")
 	
 	group = parser.add_argument_group('Preprocessing')
-	
 	group.add_argument("-A", "--align",
 		dest='align', type=int,
 		nargs=2, metavar=("X", "Y"), default=(0, 0),
@@ -271,7 +270,7 @@ def main():
 		help="Resize offset from top or left in either pixels or percentage (default: %(default)s)")
 	
 	args = parser.parse_args()
-
+	
 	images = [Image.open(args.image_left), Image.open(args.image_right)]
 	
 	for i, _ in enumerate(images):
@@ -286,7 +285,7 @@ def main():
 	
 	if any(args.align):
 		images = align(images, args.align)
-		
+	
 	for i, _ in enumerate(images):
 		if any(args.crop):
 			images[i] = crop(images[i], args.crop)
@@ -309,19 +308,19 @@ def main():
 		output = create_patterened_image(images, 0, args.checkerboard!="odd")
 		output.save(args.image_output)
 	else:
-		if not (args.is_cross_eye or args.is_parallel or
-			args.is_over_under or args.is_under_over):
-			args.is_cross_eye = True
-			
-		is_horizontal = args.is_cross_eye or args.is_parallel
+		if not (args.cross_eye or args.parallel or
+			args.over_under or args.under_over):
+			args.cross_eye = True
 		
-		if args.is_squash:
+		is_horizontal = args.cross_eye or args.parallel
+		
+		if args.squash:
 			for i, _ in enumerate(images):
 				images[0] = squash(images[0], is_horizontal)
-
-		if args.is_cross_eye or args.is_under_over:
+		
+		if args.cross_eye or args.under_over:
 			images.reverse()
-
+		
 		if args.image_output2 is None:
 			output = create_side_by_side_image(images, is_horizontal, args.line, args.border, args.bg_color)
 			output.save(args.image_output)
