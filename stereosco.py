@@ -231,7 +231,7 @@ def create_patterened_image(images, pattern=1, left_is_even=True):
 	return output
 
 def save_as_wiggle_gif_image(output_file, images, total_duration=200):
-	images[0].save(output_file, save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
+	images[0].save(output_file, format="gif", save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
 
 
 def main():
@@ -244,11 +244,17 @@ def main():
 	parser.add_argument("image_right",
 		metavar="RIGHT", type=str, help="right image")
 	parser.add_argument("image_output",
-		metavar="OUT", type=str, help="output image")
+		metavar="OUT", nargs='?', type=str, help="Output image to a file with the given name or to stdout if left omitted")
 	parser.add_argument("image_output2",
 		metavar="OUT2", nargs='?', type=str,
 		help="optional second output image for split left and right")
 	
+	parser.add_argument("-Q", "--quality",
+		dest='quality', metavar="PCT", type=int, default="95",
+		help="Set the image quality of the output image in percentage from 1 to 100 [default: %(default)s]")
+	parser.add_argument("-F", "--format",
+		dest='format', metavar="NAME", type=str,
+		help="Set the format of the output image: JPG, PNG, GIF,... If omitted, the format to use is determined from the filename extension. Required if outputting to stdout.")
 	parser.add_argument("-B", "--bg-color",
 		dest='bg_color', type=int,
 		nargs=4, metavar=("RED", "GREEN", "BLUE", "ALPHA"), default=(255, 255, 255, 0),
@@ -326,6 +332,11 @@ def main():
 	
 	args = parser.parse_args()
 	
+	if args.image_output:
+		image_output = args.image_output
+	else:
+		image_output = sys.stdout.buffer
+	
 	images = [Image.open(args.image_left), Image.open(args.image_right)]
 	
 	for i, _ in enumerate(images):
@@ -356,18 +367,15 @@ def main():
 		elif args.luma_coding == "rec709":
 			luma_coding = AG_LUMA_CODING_REC709
 		output = create_anaglyph(images, args.anaglyph, args.color_scheme, luma_coding)
-		output.save(args.image_output)
 	elif args.wiggle:
-		save_as_wiggle_gif_image(args.image_output, images, args.wiggle)
+		save_as_wiggle_gif_image(image_output, images, args.wiggle)
+		return
 	elif args.interlaced_horizontal:
 		output = create_interweaved_image(images, 1, args.interlaced_horizontal!="odd")
-		output.save(args.image_output)
 	elif args.interlaced_vertical:
 		output = create_patterened_image(images, 2, args.interlaced_vertical!="odd")
-		output.save(args.image_output)
 	elif args.checkerboard:
 		output = create_patterened_image(images, 0, args.checkerboard!="odd")
-		output.save(args.image_output)
 	else:
 		if not (args.cross_eye or args.parallel or
 			args.over_under or args.under_over):
@@ -384,10 +392,11 @@ def main():
 		
 		if args.image_output2 is None:
 			output = create_side_by_side_image(images, is_horizontal, args.divider, args.border, args.bg_color)
-			output.save(args.image_output)
 		else:
-			images[0].save(args.image_output)
-			images[1].save(args.image_output2)
+			images[0].save(args.image_output, format=args.format, quality=args.quality, optimize=True)
+			images[1].save(args.image_output2, format=args.format, quality=args.quality, optimize=True)
+			return
+	output.save(image_output, format=args.format, quality=args.quality, optimize=True)
 
 if __name__ == '__main__':
 	main()
