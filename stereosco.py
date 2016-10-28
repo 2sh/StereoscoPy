@@ -17,7 +17,7 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from PIL import Image, ImageChops, ImageMath
+from PIL import Image, ImageChops, ImageMath, ImageOps
 
 def to_pixels(value, reference):
 	try:
@@ -91,7 +91,7 @@ def squash(image, horizontal=True):
 		new_size = (image.size[0], round(image.size[1]/2))
 	return image.resize(new_size, Image.ANTIALIAS)
 
-def create_side_by_side_image(images, horizontal=True, divider=0, border=0, bg_color=(255, 255, 255, 0)):
+def create_side_by_side_image(images, horizontal=True, divider=0, bg_color=(255, 255, 255, 0)):
 	if horizontal:
 		width = images[0].size[0] * 2 + divider
 		height = images[0].size[1]
@@ -103,15 +103,11 @@ def create_side_by_side_image(images, horizontal=True, divider=0, border=0, bg_c
 		r_left = 0
 		r_top = images[0].size[1] + divider
 	
-	width += 2 * border
-	height += 2 * border
-	r_left += border
-	r_top += border
-	
 	output = Image.new("RGBA", (width, height), bg_color)
-	output.paste(images[0], (border, border))
+	output.paste(images[0], (0, 0))
 	output.paste(images[1], (r_left, r_top))
 	return output
+
 
 AG_LUMA_CODING_RGB = (1/3, 1/3, 1/3)
 AG_LUMA_CODING_REC601 = (0.299, 0.587, 0.114)
@@ -252,16 +248,19 @@ def main():
 		metavar="OUT2", type=str, nargs='?',
 		help="output an optional second image for split left and right")
 	
-	parser.add_argument("-Q", "--quality",
+	parser.add_argument("-q", "--quality",
 		dest='quality', metavar="VALUE", type=int, default="95",
 		help="set the output image quality: 1-100 [default: %(default)s]")
-	parser.add_argument("-F", "--format",
+	parser.add_argument("-f", "--format",
 		dest='format', metavar="FORMAT", type=str,
 		help="set the output image format: JPG, PNG, GIF,... If left omitted, the format to use is determined from the filename extension.")
-	parser.add_argument("-B", "--bg-color",
+	parser.add_argument("--bg",
 		dest='bg_color', type=int,
 		nargs=4, metavar=("RED", "GREEN", "BLUE", "ALPHA"), default=(255, 255, 255, 0),
 		help="set the background color and transparency (alpha): 0-255 each [default: 255, 255, 255, 0]. The default is white for JPEG and transparent for PNG. This is also the color for the divider and border.")
+	parser.add_argument("--border",
+		dest='border', metavar="WIDTH", type=int, default=0,
+		help="surround the output image with a border of a given width")
 	
 	group = parser.add_argument_group('Side-by-side')
 	group.add_argument("-x", "--cross-eye",
@@ -280,17 +279,17 @@ def main():
 	group.add_argument("-s", "--squash",
 		dest='squash', action='store_true',
 		help="squash the sides to be half their width (cross-eye, parallel) or height (over/under, under/over)")
-	group.add_argument("-d", "--divider",
+	group.add_argument("--div",
 		dest='divider', metavar="WIDTH", type=int, default=0,
 		help="separate the two sides with a divider of a given width")
-	group.add_argument("-b", "--border",
-		dest='border', metavar="WIDTH", type=int, default=0,
-		help="surround the output image with a border of a given width")
 	
 	group = parser.add_argument_group('Anaglyph')
 	group.add_argument("-a", "--anaglyph",
-		dest='anaglyph', type=str, nargs='?', metavar="METHOD", const="optimized",
-		help="output an anaglyph image: gray, color, half-color, optimized, dubois [default: %(const)s]. The dubois method is only available with the red-cyan, green-magenta and amber-blue color schemes.")
+		dest='anaglyph', action='store_true',
+		help="output an anaglyph image")
+	group.add_argument("-m", "--anaglyph-method",
+		dest='anaglyph_method', metavar="METHOD", type=str, default="optimized",
+		help="set the anaglyph method: gray, color, half-color, optimized, dubois [default: %(default)s]. The dubois method is only available with the red-cyan, green-magenta and amber-blue color schemes.")
 	group.add_argument("--cs", "--color-scheme",
 		dest='color_scheme', metavar="SCHEME", type=str, default="red-cyan",
 		help="set the anaglyph color scheme: red-green, red-blue, red-cyan, green-magenta, amber-blue, magenta-cyan [default: %(default)s]. The non-complementary colors are mainly to be used with the gray method.")
@@ -300,19 +299,25 @@ def main():
 	
 	group = parser.add_argument_group('Animated')
 	group.add_argument("-w", "--wiggle",
-		dest='wiggle', type=int, nargs='?', metavar="DURATION", const=200,
-		help="output a wiggle GIF image with total duration in milliseconds [default: %(const)s]")
+		dest='wiggle', action='store_true',
+		help="output a wiggle GIF image")
+	group.add_argument("-t", "--duration",
+		dest='duration', metavar="DURATION", type=int, default=300,
+		help="set the total duration of the wiggle GIF animation in milliseconds [default: %(default)s]")
 	
 	group = parser.add_argument_group('Patterened')
-	group.add_argument("-i", "--interlaced-h",
-		dest='interlaced_horizontal', type=str, nargs='?', metavar="EVEN/ODD", const="even",
-		help="output a horizontally interlaced image with the left image being either the even or odd line [default: %(const)s]")
-	group.add_argument("-v", "--interlaced-v",
-		dest='interlaced_vertical', type=str, nargs='?', metavar="EVEN/ODD", const="even",
-		help="outout a vertically interlaced image with the left image being either the even or odd line [default: %(const)s]")
-	group.add_argument("-c", "--checkerboard",
-		dest='checkerboard', type=str, nargs='?', metavar="EVEN/ODD", const="even",
-		help="output a checkerboard patterned image with the left image being either the even or odd square [default: %(const)s]")
+	group.add_argument("--ih", "--interlaced-h",
+		dest='interlaced_horizontal', action='store_true',
+		help="output a horizontally interlaced image")
+	group.add_argument("--iv", "--interlaced-v",
+		dest='interlaced_vertical', action='store_true',
+		help="outout a vertically interlaced image")
+	group.add_argument("--cb", "--checkerboard",
+		dest='checkerboard', action='store_true',
+		help="output a checkerboard patterned image")
+	group.add_argument("--odd",
+		dest='odd', action='store_true',
+		help="set the left image to be the odd line or square of the pattern instead of the even one")
 	
 	group = parser.add_argument_group('Preprocessing')
 	group.add_argument("-A", "--align",
@@ -372,16 +377,16 @@ def main():
 			luma_coding = AG_LUMA_CODING_REC601
 		elif args.luma_coding == "rec709":
 			luma_coding = AG_LUMA_CODING_REC709
-		output = create_anaglyph(images, args.anaglyph, args.color_scheme, luma_coding)
+		output = create_anaglyph(images, args.anaglyph_method, args.color_scheme, luma_coding)
 	elif args.wiggle:
-		save_as_wiggle_gif_image(image_output, images, args.wiggle)
+		save_as_wiggle_gif_image(image_output, images, args.duration)
 		return
 	elif args.interlaced_horizontal:
-		output = create_interweaved_image(images, 1, args.interlaced_horizontal!="odd")
+		output = create_interweaved_image(images, 1, not args.odd)
 	elif args.interlaced_vertical:
-		output = create_patterened_image(images, 2, args.interlaced_vertical!="odd")
+		output = create_patterened_image(images, 2, not args.odd)
 	elif args.checkerboard:
-		output = create_patterened_image(images, 0, args.checkerboard!="odd")
+		output = create_patterened_image(images, 0, not args.odd)
 	else:
 		if not (args.cross_eye or args.parallel or
 			args.over_under or args.under_over):
@@ -397,11 +402,13 @@ def main():
 			images.reverse()
 		
 		if args.image_output2 is None:
-			output = create_side_by_side_image(images, is_horizontal, args.divider, args.border, args.bg_color)
+			output = create_side_by_side_image(images, is_horizontal, args.divider, args.bg_color)
 		else:
 			images[0].save(args.image_output, format=args.format, quality=args.quality, optimize=True)
 			images[1].save(args.image_output2, format=args.format, quality=args.quality, optimize=True)
 			return
+	if args.border:
+		output = ImageOps.expand(output, args.border, args.bg_color)
 	output.save(image_output, format=args.format, quality=args.quality, optimize=True)
 
 if __name__ == '__main__':
