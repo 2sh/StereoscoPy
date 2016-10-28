@@ -42,6 +42,25 @@ def fix_orientation(image):
 	else:
 		return image
 
+def rotate(images, rots, bg_color=(255, 255, 255, 0)):
+	images = list(images)
+	width = 0
+	height = 0
+	for i in range(len(images)):
+		if rots[i]:
+			images[i] = images[i].rotate(rots[i], Image.BICUBIC, True)
+			width = max(images[i].size[0], width)
+			height = max(images[i].size[1], height)
+	for i in range(len(images)):
+		left = round((width-images[i].size[0])/2)
+		top = round((height-images[i].size[1])/2)
+		if left or top:
+			image = Image.new("RGBA", (width, height), bg_color)
+			mask = images[i].split()[3]
+			image.paste(images[i], (left, top),	mask)
+			images[i] = image
+	return images
+
 def align(images, xy):
 	x, y = xy
 	x_right = abs(x) if x>0 else 0
@@ -229,6 +248,7 @@ def create_patterened_image(images, pattern=1, left_is_even=True):
 def save_as_wiggle_gif_image(output_file, images, total_duration=200):
 	images[0].save(output_file, format="gif", save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
 
+
 def main():
 	import sys
 	import argparse
@@ -320,6 +340,10 @@ def main():
 		help="set the left image to be the odd line or square of the pattern instead of the even one")
 	
 	group = parser.add_argument_group('Preprocessing')
+	group.add_argument("-T", "--rotate",
+		dest='rotate', type=float,
+		nargs=2, metavar=("LEFT", "RIGHT"), default=(0, 0),
+		help="rotate both images in degrees")
 	group.add_argument("-A", "--align",
 		dest='align', type=int,
 		nargs=2, metavar=("X", "Y"), default=(0, 0),
@@ -359,6 +383,9 @@ def main():
 		if i > 0 and images[0].size != images[i].size:
 			print("Given images are not the same size!", file=sys.stderr)
 			exit()
+	
+	if any(args.rotate):
+		images = rotate(images, args.rotate)
 	
 	if any(args.align):
 		images = align(images, args.align)
