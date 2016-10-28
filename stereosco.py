@@ -91,17 +91,17 @@ def squash(image, horizontal=True):
 		new_size = (image.size[0], round(image.size[1]/2))
 	return image.resize(new_size, Image.ANTIALIAS)
 
-def create_side_by_side_image(images, horizontal=True, separation=0, border=0, bg_color=(255, 255, 255, 0)):
+def create_side_by_side_image(images, horizontal=True, divider=0, border=0, bg_color=(255, 255, 255, 0)):
 	if horizontal:
-		width = images[0].size[0] * 2 + separation
+		width = images[0].size[0] * 2 + divider
 		height = images[0].size[1]
-		r_left = images[0].size[0] + separation
+		r_left = images[0].size[0] + divider
 		r_top = 0
 	else:
 		width = images[0].size[0]
-		height = images[0].size[1] * 2 + separation
+		height = images[0].size[1] * 2 + divider
 		r_left = 0
-		r_top = images[0].size[1] + separation
+		r_top = images[0].size[1] + divider
 	
 	width += 2 * border
 	height += 2 * border
@@ -263,16 +263,16 @@ def main():
 		help="Parallel output: Left/Right")
 	group.add_argument("-o", "--over-under",
 		dest='over_under', action='store_true',
-		help="Over/under output: Left is over and right is under")
+		help="Over/Under output: Left is over and right is under")
 	group.add_argument("-u", "--under-over",
 		dest='under_over', action='store_true',
 		help="Under/Over output: Left is under and right is over")
 	
 	group.add_argument("-s", "--squash",
 		dest='squash', action='store_true',
-		help="Squash the two sides to make an image of size equal to that of the sides")
+		help="Squash the sides to be half their width/height to create an image with the size of the sides")
 	group.add_argument("-d", "--divider",
-		dest='line', metavar="WIDTH", type=int, default=0,
+		dest='divider', metavar="WIDTH", type=int, default=0,
 		help="Divide the two images by a given width")
 	group.add_argument("-b", "--border",
 		dest='border', metavar="WIDTH", type=int, default=0,
@@ -383,7 +383,7 @@ def main():
 			images.reverse()
 		
 		if args.image_output2 is None:
-			output = create_side_by_side_image(images, is_horizontal, args.line, args.border, args.bg_color)
+			output = create_side_by_side_image(images, is_horizontal, args.divider, args.border, args.bg_color)
 			output.save(args.image_output)
 		else:
 			images[0].save(args.image_output)
