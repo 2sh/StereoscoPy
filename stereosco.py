@@ -233,108 +233,114 @@ def create_patterened_image(images, pattern=1, left_is_even=True):
 def save_as_wiggle_gif_image(output_file, images, total_duration=200):
 	images[0].save(output_file, format="gif", save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
 
-
 def main():
 	import sys
 	import argparse
-	parser = argparse.ArgumentParser(description="Convert 2 images into a stereoscopic 3D image")
+	
+	parser = argparse.ArgumentParser(description="Convert 2 images into a stereoscopic 3D image", usage="%(prog)s [OPTION]... LEFT RIGHT [OUT] [OUT2]")
 	
 	parser.add_argument("image_left",
-		metavar="LEFT", type=str, help="left image")
+		metavar="LEFT", type=str,
+		help="left input image")
 	parser.add_argument("image_right",
-		metavar="RIGHT", type=str, help="right image")
+		metavar="RIGHT", type=str,
+		help="right input image.")
 	parser.add_argument("image_output",
-		metavar="OUT", nargs='?', type=str, help="Output image to a file with the given name or to stdout if left omitted")
+		metavar="OUT", type=str, nargs='?',
+		help="output file. If left omitted, output to STDOUT, in which case the output format is required.")
 	parser.add_argument("image_output2",
-		metavar="OUT2", nargs='?', type=str,
-		help="optional second output image for split left and right")
+		metavar="OUT2", type=str, nargs='?',
+		help="output an optional second image for split left and right")
 	
 	parser.add_argument("-Q", "--quality",
-		dest='quality', metavar="PCT", type=int, default="95",
-		help="Set the image quality of the output image in percentage from 1 to 100 [default: %(default)s]")
+		dest='quality', metavar="VALUE", type=int, default="95",
+		help="set the output image quality: 1-100 [default: %(default)s]")
 	parser.add_argument("-F", "--format",
-		dest='format', metavar="NAME", type=str,
-		help="Set the format of the output image: JPG, PNG, GIF,... If omitted, the format to use is determined from the filename extension. Required if outputting to stdout.")
+		dest='format', metavar="FORMAT", type=str,
+		help="set the output image format: JPG, PNG, GIF,... If left omitted, the format to use is determined from the filename extension.")
 	parser.add_argument("-B", "--bg-color",
 		dest='bg_color', type=int,
 		nargs=4, metavar=("RED", "GREEN", "BLUE", "ALPHA"), default=(255, 255, 255, 0),
-		help="Set background color and transparency (alpha) with values between 0 and 255 [default: (255, 255, 255, 0) => white for JPEG or transparent for PNG]")
+		help="set the background color and transparency (alpha): 0-255 each [default: 255, 255, 255, 0]. The default is white for JPEG and transparent for PNG. This is also the color for the divider and border.")
 	
 	group = parser.add_argument_group('Side-by-side')
 	group.add_argument("-x", "--cross-eye",
 		dest='cross_eye', action='store_true',
-		help="cross-eye output: Right/Left")
+		help="output an image for cross-eyed viewing, right/left")
 	group.add_argument("-p", "--parallel",
 		dest='parallel',  action='store_true',
-		help="Parallel output: Left/Right")
+		help="output an image for parallel viewing, left/right")
 	group.add_argument("-o", "--over-under",
 		dest='over_under', action='store_true',
-		help="Over/Under output: Left is over and right is under")
+		help="output an over/under image, left is over")
 	group.add_argument("-u", "--under-over",
 		dest='under_over', action='store_true',
-		help="Under/Over output: Left is under and right is over")
+		help="output an under/over image, left is under")
 	
 	group.add_argument("-s", "--squash",
 		dest='squash', action='store_true',
-		help="Squash the sides to be half their width/height to create an image with the size of the sides")
+		help="squash the sides to be half their width (cross-eye, parallel) or height (over/under, under/over)")
 	group.add_argument("-d", "--divider",
 		dest='divider', metavar="WIDTH", type=int, default=0,
-		help="Divide the two images by a given width")
+		help="separate the two sides with a divider of a given width")
 	group.add_argument("-b", "--border",
 		dest='border', metavar="WIDTH", type=int, default=0,
-		help="Surround the output image with a border of a given width")
+		help="surround the output image with a border of a given width")
 	
 	group = parser.add_argument_group('Encoded')
 	group.add_argument("-a", "--anaglyph",
-		dest='anaglyph', nargs="?", type=str, metavar="METHOD", const="optimized", 
-		help="Anaglyph output with a choice of the following methods: gray, color, half-color, optimized, dubois (red-cyan, green-magenta & amber-blue only) [default: %(const)s]")
+		dest='anaglyph', type=str, nargs='?', metavar="METHOD", const="optimized",
+		help="output an anaglyph image: gray, color, half-color, optimized, dubois [default: %(const)s]. The dubois method is only available with the red-cyan, green-magenta and amber-blue color schemes.")
 	group.add_argument("--cs", "--color-scheme",
 		dest='color_scheme', metavar="SCHEME", type=str, default="red-cyan",
-		help="Anaglyph color scheme: red-green, red-blue, red-cyan, green-magenta, amber-blue, magenta-cyan [default: %(default)s]")
+		help="set the anaglyph color scheme: red-green, red-blue, red-cyan, green-magenta, amber-blue, magenta-cyan [default: %(default)s]. The non-complementary colors are mainly to be used with the gray method.")
 	group.add_argument("--lc", "--luma-coding",
 		dest='luma_coding', metavar="CODING", type=str, default="rec709",
-		help="Luma coding for gray and half-color: rgb, rec601 (PAL/NTSC), rec709 (HDTV) [default: %(default)s]")
+		help="set the luma coding for the gray and half-color methods: rgb, rec601 (PAL/NTSC), rec709 (HDTV) [default: %(default)s]")
 	
 	group = parser.add_argument_group('Animated')
 	group.add_argument("-w", "--wiggle",
-		dest='wiggle', nargs="?", type=int, metavar="DURATION", const=200, 
-		help="Wiggle GIF image with total duration in milliseconds [default: %(const)s]")
+		dest='wiggle', type=int, nargs='?', metavar="DURATION", const=200,
+		help="output a wiggle GIF image with total duration in milliseconds [default: %(const)s]")
 	
 	group = parser.add_argument_group('Patterened')
 	group.add_argument("-i", "--interlaced-h",
-		dest='interlaced_horizontal', nargs="?", type=str, metavar="EVEN/ODD", const="even",
-		help="Horizontally interlaced output with the left image being either the even or odd line [default: %(const)s]")
+		dest='interlaced_horizontal', type=str, nargs='?', metavar="EVEN/ODD", const="even",
+		help="output a horizontally interlaced image with the left image being either the even or odd line [default: %(const)s]")
 	group.add_argument("-v", "--interlaced-v",
-		dest='interlaced_vertical', nargs="?", type=str, metavar="EVEN/ODD", const="even",
-		help="Vertically interlaced output with the left image being either the even or odd line [default: %(const)s]")
+		dest='interlaced_vertical', type=str, nargs='?', metavar="EVEN/ODD", const="even",
+		help="outout a vertically interlaced image with the left image being either the even or odd line [default: %(const)s]")
 	group.add_argument("-c", "--checkerboard",
-		dest='checkerboard', nargs="?", type=str, metavar="EVEN/ODD", const="even",
-		help="Checkerboard output with the left image being either the even or odd square [default: %(const)s]")
+		dest='checkerboard', type=str, nargs='?', metavar="EVEN/ODD", const="even",
+		help="output a checkerboard patterned image with the left image being either the even or odd square [default: %(const)s]")
 	
 	group = parser.add_argument_group('Preprocessing')
 	group.add_argument("-A", "--align",
 		dest='align', type=int,
 		nargs=2, metavar=("X", "Y"), default=(0, 0),
-		help="Align right image in relation to left image")
+		help="align the right image in relation to the left image")
 	
 	group.add_argument("-C", "--crop",
 		dest='crop', type=str,
 		nargs=4, metavar=("LEFT", "TOP", "RIGHT", "BOTTOM"), default=(0, 0, 0, 0),
-		help="Crop both images in either pixels or percentage")
+		help="crop both images in either pixels or percentage")
 	
 	group.add_argument("-R", "--resize",
 		dest='resize', type=int,
 		nargs=2, metavar=("WIDTH", "HEIGHT"), default=(0, 0),
-		help="Resize both images to WIDTHxHEIGHT: A side with 0 is calculated automatically to preserve aspect ratio")
+		help="resize both images to WIDTHxHEIGHT. A value of 0 is calculated automatically to preserve the aspect ratio.")
 	group.add_argument("-O", "--offset",
 		dest='offset', type=str, default="50%",
-		help="Resize offset from top or left in either pixels or percentage [default: %(default)s]")
+		help="set the resize offset from top or left in either pixels or percentage [default: %(default)s]")
 	
 	args = parser.parse_args()
 	
 	if args.image_output:
 		image_output = args.image_output
 	else:
+		if args.format is None:
+			print("Either specify the output file name or the format to be used for outputting to STDOUT.", file=sys.stderr)
+			exit()
 		image_output = sys.stdout.buffer
 	
 	images = [Image.open(args.image_left), Image.open(args.image_right)]
