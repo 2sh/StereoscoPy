@@ -18,7 +18,6 @@
 #
 
 from PIL import Image, ImageChops, ImageMath
-from collections import OrderedDict
 
 def to_pixels(value, reference):
 	try:
@@ -114,16 +113,97 @@ def create_side_by_side_image(images, horizontal=True, separation=0, border=0, b
 	output.paste(images[1], (r_left, r_top))
 	return output
 
-def create_anaglyph(images, matrices):
+AG_LUMA_CODING_RGB = (1/3, 1/3, 1/3)
+AG_LUMA_CODING_REC601 = (0.299, 0.587, 0.114)
+AG_LUMA_CODING_REC709 = (0.2126, 0.7152, 0.0722)
+
+_AG_COLOR_SCHEMES = {
+	"red-green": (
+		(1, 0, 0), (0, 1, 0)),
+	"red-blue": (
+		(1, 0, 0), (0, 0, 1)),
+	"red-cyan": (
+		(1, 0, 0), (0, 1, 1)),
+	"green-magenta": (
+		(0, 1, 0), (1, 0, 1)),
+	"amber-blue": (
+		(1, 1, 0), (0, 0, 1)),
+	"magenta-cyan": (
+		(1, 0, 1), (0, 1, 1))
+}
+
+_AG_METHODS = {
+	"gray":
+		("lum", "lum"),
+	"color":
+		("rgb", "rgb"),
+	"half-color":
+		("lum", "rgb"),
+	"optimized": # wimmer
+		("opt", "rgb")
+}
+
+_AG_COLOR_MATRICES = {
+	"rgb": (
+		(1, 0, 0),
+		(0, 1, 0),
+		(0, 0, 1)
+	),
+	"opt": (
+		(0, 0.7, 0.3),
+		(0.5, 0, 0.5), # ?
+		(0.5, 0.5, 0) # ?
+	)
+}
+
+_AG_DUBOIS = {
+	"red-cyan": (
+		((0.456, 0.500, 0.175), (-0.040, -0.038, -0.016), (-0.015, -0.021, -0.005)),
+		((-0.043, -0.088, -0.002), (0.378, 0.734, -0.018), (-0.072, -0.113, 1.226))),
+	"green-magenta": (
+		((-0.062, -0.158, -0.039), (0.284, 0.668, 0.143), (-0.015, -0.027, 0.021)),
+		((0.529, 0.705, 0.024), (-0.016, -0.015, -0.065), (0.009, 0.075, 0.937))),
+	"amber-blue": (
+		((1.062, -0.205, 0.299), (-0.026, 0.908, 0.068), (-0.038, -0.173, 0.022)),
+		((-0.016, -0.123, -0.017), (0.006, 0.062, -0.017), (0.094, 0.185, 0.911)))
+}
+
+def create_anaglyph(images, method="optimized", color_scheme="red-cyan", luma_coding=AG_LUMA_CODING_RGB):
+	if method == "dubois":
+		try:
+			matrices = _AG_DUBOIS[color_scheme]
+		except:
+			raise Exception("No Dubois matrices available for the specified color scheme")
+	else:
+		if isinstance(color_scheme, str):
+			colors = _AG_COLOR_SCHEMES[color_scheme]
+		matrices = []
+		for matrix_name, color in zip(_AG_METHODS[method], colors):
+			matrix = []
+			if matrix_name == "lum":
+				color_matrix = (luma_coding,)*3
+			else:
+				color_matrix = _AG_COLOR_MATRICES[matrix_name]
+			for color_band, intensity in zip(color_matrix, color):
+				matrix.append((
+					color_band[0] * intensity,
+					color_band[1] * intensity,
+					color_band[2] * intensity))
+			matrices.append(tuple(matrix))
+	
 	left_bands = images[0].split()
 	right_bands = images[1].split()
-	
 	output_bands = list()
-	for i in range(0, 9, 3):
-		output_bands.append(ImageMath.eval(("convert(" +
-			"(float(lr)*{0[0]})+(float(lg)*{0[1]})+(float(lb)*{0[2]})+" +
-			"(float(rr)*{1[0]})+(float(rg)*{1[1]})+(float(rb)*{1[2]}), 'L')")
-				.format(matrices[0][i:i+3], matrices[1][i:i+3]),
+	for i in range(3):
+		expression = (
+			"(float(lr)*{lm[0]}+float(lg)*{lm[1]}+float(lb)*{lm[2]}+" +
+			 "float(rr)*{rm[0]}+float(rg)*{rm[1]}+float(rb)*{rm[2]})"
+			).format(lm=matrices[0][i], rm=matrices[1][i])
+		
+		if method == "optimized" and colors[0][i]:
+			expression = "((" + expression + "/255)**(1/" + str(1 + (0.5 * colors[0][i])) + "))*255"
+		
+		output_bands.append(ImageMath.eval("convert(" + expression + ", 'L')",
 			lr=left_bands[0], lg=left_bands[1], lb=left_bands[2],
 			rr=right_bands[0], rg=right_bands[1], rb=right_bands[2]))
 	
@@ -131,39 +211,6 @@ def create_anaglyph(images, matrices):
 		output_bands.append(ImageChops.lighter(left_bands[3], right_bands[3]))
 		return Image.merge("RGBA", output_bands)
 	return Image.merge("RGB", output_bands)
-
-ANAGLYPH_MATRICES = OrderedDict([
-	("true", (
-		(0.299, 0.587, 0.114,  0, 0, 0,  0, 0, 0),
-		(0, 0, 0,  0, 0, 0,  0.299, 0.587, 0.114))),
-	("gray", (
-		(0.299, 0.587, 0.114,  0, 0, 0,  0, 0, 0),
-		(0, 0, 0,  0.299, 0.587, 0.114,  0.299, 0.587, 0.114))),
-	("color", (
-		(1, 0, 0,  0, 0, 0,  0, 0, 0),
-		(0, 0, 0,  0, 1, 0,  0, 0, 1))),
-	("half-color", (
-		(0.299, 0.587, 0.114,  0, 0, 0,  0, 0, 0),
-		(0, 0, 0,  0, 1, 0,  0, 0, 1))),
-	("optimized", (
-		(0, 0.7, 0.3,  0, 0, 0,  0, 0, 0),
-		(0, 0, 0,  0, 1, 0,  0, 0, 1))),
-	("dubois-red-cyan", (
-		(0.456, 0.500, 0.175,  -0.040, -0.038, -0.016,  -0.015, -0.021, -0.005),
-		(-0.043, -0.088, -0.002,  0.378, 0.734, -0.018,  -0.072, -0.113, 1.226))),
-	("dubois-red-cyan2", (
-		(0.437, 0.449, 0.164,  -0.062, -0.062, -0.024,  -0.048, -0.050, -0.017),
-		(-0.011, -0.032, -0.007,  0.377, 0.761, 0.009,  -0.026, -0.093, 1.234))),
-	("dubois-green-magenta", (
-		(-0.062, -0.158, -0.039,  0.284, 0.668, 0.143,  -0.015, -0.027, 0.021),
-		(0.529, 0.705, 0.024,  -0.016, -0.015, -0.065,  0.009, 0.075, 0.937))),
-	("dubois-amber-blue", (
-		(1.062, -0.205, 0.299,  -0.026, 0.908, 0.068,  -0.038, -0.173, 0.022),
-		(-0.016, -0.123, -0.017,  0.006, 0.062, -0.017,  0.094, 0.185, 0.911)))
-])
-
-def save_as_wiggle_gif_image(output_file, images, total_duration=200):
-	images[0].save(output_file, save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
 
 def create_patterened_image(images, pattern=1, left_is_even=True):
 	output = images[0].copy()
@@ -182,6 +229,9 @@ def create_patterened_image(images, pattern=1, left_is_even=True):
 				if x % 2 != left_is_even:
 					o[x,y] = r[x,y]
 	return output
+
+def save_as_wiggle_gif_image(output_file, images, total_duration=200):
+	images[0].save(output_file, save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
 
 
 def main():
@@ -202,7 +252,7 @@ def main():
 	parser.add_argument("-B", "--bg-color",
 		dest='bg_color', type=int,
 		nargs=4, metavar=("RED", "GREEN", "BLUE", "ALPHA"), default=(255, 255, 255, 0),
-		help="Set background color and transparency (alpha) with values between 0 and 255 (default: [255, 255, 255, 0] => white for JPEG or transparent for PNG)")
+		help="Set background color and transparency (alpha) with values between 0 and 255 [default: (255, 255, 255, 0) => white for JPEG or transparent for PNG]")
 	
 	group = parser.add_argument_group('Side-by-side')
 	group.add_argument("-x", "--cross-eye",
@@ -221,34 +271,39 @@ def main():
 	group.add_argument("-s", "--squash",
 		dest='squash', action='store_true',
 		help="Squash the two sides to make an image of size equal to that of the sides")
-	group.add_argument("-l", "--line",
+	group.add_argument("-d", "--divider",
 		dest='line', metavar="WIDTH", type=int, default=0,
-		help="Separate the two images by a line of a given width")
+		help="Divide the two images by a given width")
 	group.add_argument("-b", "--border",
 		dest='border', metavar="WIDTH", type=int, default=0,
 		help="Surround the output image with a border of a given width")
 	
 	group = parser.add_argument_group('Encoded')
 	group.add_argument("-a", "--anaglyph",
-		dest='anaglyph', nargs="?", type=str, metavar="METHOD", const="dubois-red-cyan", 
-		help="Anaglyph output with a choice of the following methods: " +
-			", ".join(ANAGLYPH_MATRICES.keys()) + " (default method: %(const)s)")
+		dest='anaglyph', nargs="?", type=str, metavar="METHOD", const="optimized", 
+		help="Anaglyph output with a choice of the following methods: gray, color, half-color, optimized, dubois (red-cyan, green-magenta & amber-blue only) [default: %(const)s]")
+	group.add_argument("--cs", "--color-scheme",
+		dest='color_scheme', metavar="SCHEME", type=str, default="red-cyan",
+		help="Anaglyph color scheme: red-green, red-blue, red-cyan, green-magenta, amber-blue, magenta-cyan [default: %(default)s]")
+	group.add_argument("--lc", "--luma-coding",
+		dest='luma_coding', metavar="CODING", type=str, default="rec709",
+		help="Luma coding for gray and half-color: rgb, rec601 (PAL/NTSC), rec709 (HDTV) [default: %(default)s]")
 	
 	group = parser.add_argument_group('Animated')
 	group.add_argument("-w", "--wiggle",
 		dest='wiggle', nargs="?", type=int, metavar="DURATION", const=200, 
-		help="Wiggle GIF image with total duration in milliseconds (default: %(const)s)")
+		help="Wiggle GIF image with total duration in milliseconds [default: %(const)s]")
 	
 	group = parser.add_argument_group('Patterened')
 	group.add_argument("-i", "--interlaced-h",
 		dest='interlaced_horizontal', nargs="?", type=str, metavar="EVEN/ODD", const="even",
-		help="Horizontally interlaced output with the left image being either the even or odd line (default: %(const)s)")
+		help="Horizontally interlaced output with the left image being either the even or odd line [default: %(const)s]")
 	group.add_argument("-v", "--interlaced-v",
 		dest='interlaced_vertical', nargs="?", type=str, metavar="EVEN/ODD", const="even",
-		help="Vertically interlaced output with the left image being either the even or odd line (default: %(const)s)")
+		help="Vertically interlaced output with the left image being either the even or odd line [default: %(const)s]")
 	group.add_argument("-c", "--checkerboard",
 		dest='checkerboard', nargs="?", type=str, metavar="EVEN/ODD", const="even",
-		help="Checkerboard output with the left image being either the even or odd square (default: %(const)s)")
+		help="Checkerboard output with the left image being either the even or odd square [default: %(const)s]")
 	
 	group = parser.add_argument_group('Preprocessing')
 	group.add_argument("-A", "--align",
@@ -267,7 +322,7 @@ def main():
 		help="Resize both images to WIDTHxHEIGHT: A side with 0 is calculated automatically to preserve aspect ratio")
 	group.add_argument("-O", "--offset",
 		dest='offset', type=str, default="50%",
-		help="Resize offset from top or left in either pixels or percentage (default: %(default)s)")
+		help="Resize offset from top or left in either pixels or percentage [default: %(default)s]")
 	
 	args = parser.parse_args()
 	
@@ -294,7 +349,13 @@ def main():
 			images[i] = resize(images[i], args.resize, args.offset)
 	
 	if args.anaglyph:
-		output = create_anaglyph(images, ANAGLYPH_MATRICES[args.anaglyph])
+		if args.luma_coding == "rgb":
+			luma_coding = AG_LUMA_CODING_RGB
+		elif args.luma_coding == "rec601":
+			luma_coding = AG_LUMA_CODING_REC601
+		elif args.luma_coding == "rec709":
+			luma_coding = AG_LUMA_CODING_REC709
+		output = create_anaglyph(images, args.anaglyph, args.color_scheme, luma_coding)
 		output.save(args.image_output)
 	elif args.wiggle:
 		save_as_wiggle_gif_image(args.image_output, images, args.wiggle)
