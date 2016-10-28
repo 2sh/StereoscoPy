@@ -287,7 +287,7 @@ def main():
 		dest='border', metavar="WIDTH", type=int, default=0,
 		help="surround the output image with a border of a given width")
 	
-	group = parser.add_argument_group('Encoded')
+	group = parser.add_argument_group('Anaglyph')
 	group.add_argument("-a", "--anaglyph",
 		dest='anaglyph', type=str, nargs='?', metavar="METHOD", const="optimized",
 		help="output an anaglyph image: gray, color, half-color, optimized, dubois [default: %(const)s]. The dubois method is only available with the red-cyan, green-magenta and amber-blue color schemes.")
@@ -296,7 +296,7 @@ def main():
 		help="set the anaglyph color scheme: red-green, red-blue, red-cyan, green-magenta, amber-blue, magenta-cyan [default: %(default)s]. The non-complementary colors are mainly to be used with the gray method.")
 	group.add_argument("--lc", "--luma-coding",
 		dest='luma_coding', metavar="CODING", type=str, default="rec709",
-		help="set the luma coding for the gray and half-color methods: rgb, rec601 (PAL/NTSC), rec709 (HDTV) [default: %(default)s]")
+		help="set the luma coding for the anaglyph gray and half-color methods: rgb, rec601 (PAL/NTSC), rec709 (HDTV) [default: %(default)s]")
 	
 	group = parser.add_argument_group('Animated')
 	group.add_argument("-w", "--wiggle",
