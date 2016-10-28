@@ -54,11 +54,9 @@ def rotate(images, rots, bg_color=(255, 255, 255, 0)):
 	for i in range(len(images)):
 		left = round((width-images[i].size[0])/2)
 		top = round((height-images[i].size[1])/2)
-		if left or top:
-			image = Image.new("RGBA", (width, height), bg_color)
-			mask = images[i].split()[3]
-			image.paste(images[i], (left, top),	mask)
-			images[i] = image
+		image = Image.new("RGBA", (width, height), bg_color)
+		image.paste(images[i], (left, top),	images[i])
+		images[i] = image
 	return images
 
 def align(images, xy):
