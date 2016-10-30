@@ -19,7 +19,11 @@
 
 from PIL import Image, ImageChops, ImageMath, ImageOps
 
-def to_pixels(value, reference):
+def to_pixels(
+		value: "the value of either pixels or percentage ending with a percentage sign",
+		reference: "the value of 100%"
+	) -> "the pixel value":
+	"""Convert a percentage to pixels."""
 	try:
 		if value.endswith("%"):
 			return round((int(value[:-1])/100)*reference)
@@ -27,7 +31,8 @@ def to_pixels(value, reference):
 		pass
 	return int(value)
 
-def fix_orientation(image):
+def fix_orientation(image) -> "the reorientated image":
+	"""Fix the orientation of an image using its exif data."""
 	try:
 		orientation = image._getexif()[274]
 	except:
@@ -42,24 +47,33 @@ def fix_orientation(image):
 	else:
 		return image
 
-def rotate(images, rots, bg_color=(255, 255, 255, 0)):
+def rotate(
+		images: "multiple images",
+		rotations: "the rotation degrees of each image",
+		fill_color: "the color surrounding the images" = (255, 255, 255, 0)
+	) -> "the rotated images":
+	"""Rotate multiple images, keeping all of their sizes the same."""
 	images = list(images)
 	width = 0
 	height = 0
 	for i in range(len(images)):
-		if rots[i]:
-			images[i] = images[i].rotate(rots[i], Image.BICUBIC, True)
+		if rotations[i]:
+			images[i] = images[i].rotate(rotations[i], Image.BICUBIC, True)
 			width = max(images[i].size[0], width)
 			height = max(images[i].size[1], height)
 	for i in range(len(images)):
 		left = round((width-images[i].size[0])/2)
 		top = round((height-images[i].size[1])/2)
-		image = Image.new("RGBA", (width, height), bg_color)
+		image = Image.new("RGBA", (width, height), fill_color)
 		image.paste(images[i], (left, top),	images[i])
 		images[i] = image
 	return images
 
-def align(images, xy):
+def align(
+		images: "two images",
+		xy: "the horizontal and vertical movement of the second image"
+	) -> "the aligned images":
+	"""Align the second image to the first image."""
 	x, y = xy
 	x_right = abs(x) if x>0 else 0
 	x_left = abs(x) if x<0 else 0
@@ -70,7 +84,9 @@ def align(images, xy):
 		crop(images[0], (x_right, y_down, x_left, y_up)),
 		crop(images[1], (x_left, y_up, x_right, y_down))]
 
-def crop(image, box):
+def crop(image, box: "the crop amounts of each side in the order: left, top, right, bottom"
+	) -> "the cropped image":
+	"""Crop an image."""
 	left, top, right, bottom = box
 	return image.crop((
 		to_pixels(left, image.size[1]),
@@ -78,7 +94,11 @@ def crop(image, box):
 		image.size[0]-to_pixels(right, image.size[1]),
 		image.size[1]-to_pixels(bottom, image.size[0])))
 
-def resize(image, size, offset="50%"):
+def resize(image, size: "the width and height", offset = "50%") -> "the resized image":
+	"""Resize an image.
+	
+	A size value of 0 is calculated automatically to preserve the aspect ratio.
+	"""
 	width_ratio = size[0]/image.size[0]
 	height_ratio = size[1]/image.size[1]
 	
@@ -101,34 +121,38 @@ def resize(image, size, offset="50%"):
 		image = image.crop(offset_crop)
 	return image
 
-def squash(image, horizontal=True):
+def squash(image,
+		horizontal: "squash the image horizontal instead of vertical" = True
+	) -> "the squashed image":
+	"""Squash an image to be half its width or height"""
 	if horizontal:
 		new_size = (round(image.size[0]/2), image.size[1])
 	else:
 		new_size = (image.size[0], round(image.size[1]/2))
 	return image.resize(new_size, Image.ANTIALIAS)
 
-def create_side_by_side_image(images, horizontal=True, divider=0, bg_color=(255, 255, 255, 0)):
+def create_side_by_side_image(
+		images: "two images",
+		horizontal: "join the images horizontal instead of vertical" = True,
+		divider_width: "width of a divider between the two joined images" = 0,
+		divider_color = (255, 255, 255, 0)):
+	"""Create a side-by-side image from two images."""
 	if horizontal:
-		width = images[0].size[0] * 2 + divider
+		width = images[0].size[0] * 2 + divider_width
 		height = images[0].size[1]
-		r_left = images[0].size[0] + divider
+		r_left = images[0].size[0] + divider_width
 		r_top = 0
 	else:
 		width = images[0].size[0]
-		height = images[0].size[1] * 2 + divider
+		height = images[0].size[1] * 2 + divider_width
 		r_left = 0
-		r_top = images[0].size[1] + divider
+		r_top = images[0].size[1] + divider_width
 	
-	output = Image.new("RGBA", (width, height), bg_color)
+	output = Image.new("RGBA", (width, height), divider_color)
 	output.paste(images[0], (0, 0))
 	output.paste(images[1], (r_left, r_top))
 	return output
 
-
-AG_LUMA_CODING_RGB = (1/3, 1/3, 1/3)
-AG_LUMA_CODING_REC601 = (0.299, 0.587, 0.114)
-AG_LUMA_CODING_REC709 = (0.2126, 0.7152, 0.0722)
 
 _AG_COLOR_SCHEMES = {
 	"red-green": (
@@ -181,7 +205,26 @@ _AG_DUBOIS = {
 		((-0.016, -0.123, -0.017), (0.006, 0.062, -0.017), (0.094, 0.185, 0.911)))
 }
 
-def create_anaglyph(images, method="optimized", color_scheme="red-cyan", luma_coding=AG_LUMA_CODING_RGB):
+AG_LUMA_CODING_RGB = (1/3, 1/3, 1/3)
+AG_LUMA_CODING_REC601 = (0.299, 0.587, 0.114)
+AG_LUMA_CODING_REC709 = (0.2126, 0.7152, 0.0722)
+
+def create_anaglyph(
+		images: "two images",
+		method = "optimized",
+		color_scheme = "red-cyan",
+		luma_coding: "the luma coding for the gray and half-color methods" =
+			AG_LUMA_CODING_REC709
+	) -> "the anaglyph image":
+	"""Create an anaglyph image from two images.
+	
+	The non-complementary colors of the color schemes are mainly to be used with the gray method.
+	
+	Available methods:
+		gray, color, half-color, optimized, dubois
+	Available color schemes:
+		red-green, red-blue, red-cyan, green-magenta, amber-blue, magenta-cyan
+	"""
 	if method == "dubois":
 		try:
 			matrices = _AG_DUBOIS[color_scheme]
@@ -229,7 +272,18 @@ def create_anaglyph(images, method="optimized", color_scheme="red-cyan", luma_co
 		return Image.merge("RGBA", output_bands)
 	return Image.merge("RGB", output_bands)
 
-def create_patterened_image(images, pattern=1, left_is_even=True):
+def create_patterened_image(
+		images: "two images",
+		pattern = 1,
+		left_is_even: "set the first image to be the even line/square" = True
+	) -> "the patterened image":
+	"""Create a patterened image from two images.
+	
+	Choice of patterns:
+		0: checkerboard
+		1: interlaced horizontal (default)
+		2: interlaced vertical
+	"""
 	output = images[0].copy()
 	o = output.load()
 	r = images[1].load()
@@ -247,11 +301,15 @@ def create_patterened_image(images, pattern=1, left_is_even=True):
 					o[x,y] = r[x,y]
 	return output
 
-def save_as_wiggle_gif_image(output_file, images, total_duration=200):
+def save_as_wiggle_gif_image(
+		output_file: "file name of the output GIF",
+		images: "multiple images",
+		total_duration: "the total duration for all the images to be shown before looping" = 200):
+	"""Save multiple images as a wiggle GIF image."""
 	images[0].save(output_file, format="gif", save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
 
 
-def main():
+def _main():
 	import sys
 	import argparse
 	
@@ -441,4 +499,4 @@ def main():
 	output.save(image_output, format=args.format, quality=args.quality, optimize=True)
 
 if __name__ == '__main__':
-	main()
+	_main()
