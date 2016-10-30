@@ -140,7 +140,7 @@ _AG_COLOR_SCHEMES = {
 	"green-magenta": (
 		(0, 1, 0), (1, 0, 1)),
 	"amber-blue": (
-		(1, 1, 0), (0, 0, 1)),
+		(0.9, 1, 0), (0, 0, 0.7)),
 	"magenta-cyan": (
 		(1, 0, 1), (0, 1, 1))
 }
@@ -190,8 +190,12 @@ def create_anaglyph(images, method="optimized", color_scheme="red-cyan", luma_co
 	else:
 		if isinstance(color_scheme, str):
 			colors = _AG_COLOR_SCHEMES[color_scheme]
+			m = _AG_METHODS[method]
+			method_reverse = sum(colors[0]) > sum(colors[1])
+			if method_reverse:
+				m = (m[1], m[0])
 		matrices = []
-		for matrix_name, color in zip(_AG_METHODS[method], colors):
+		for matrix_name, color in zip(m, colors):
 			matrix = []
 			if matrix_name == "lum":
 				color_matrix = (luma_coding,)*3
@@ -213,8 +217,8 @@ def create_anaglyph(images, method="optimized", color_scheme="red-cyan", luma_co
 			 "float(rr)*{rm[0]}+float(rg)*{rm[1]}+float(rb)*{rm[2]})"
 			).format(lm=matrices[0][i], rm=matrices[1][i])
 		
-		if method == "optimized" and colors[0][i]:
-			expression = "((" + expression + "/255)**(1/" + str(1 + (0.5 * colors[0][i])) + "))*255"
+		if method == "optimized" and colors[method_reverse][i]:
+			expression = "((" + expression + "/255)**(1/" + str(1 + ([0.5, 0.2, 0.3][i] * colors[method_reverse][i])) + "))*255"
 		
 		output_bands.append(ImageMath.eval("convert(" + expression + ", 'L')",
 			lr=left_bands[0], lg=left_bands[1], lb=left_bands[2],
