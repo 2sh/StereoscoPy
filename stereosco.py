@@ -19,11 +19,17 @@
 
 from PIL import Image, ImageChops, ImageMath
 
-def to_pixels(
-		value: "the value of either pixels or percentage ending with a percentage sign",
-		reference: "the value of 100%"
-	) -> "the pixel value":
-	"""Convert a percentage to pixels."""
+def to_pixels(value, reference):
+	"""Convert a percentage to pixels.
+	
+	Args:
+		value: The value of either pixels or percentage ending with a
+			percentage sign.
+		reference: The value of 100%
+	
+	Returns:
+		The pixel value.
+	"""
 	try:
 		if value.endswith("%"):
 			return round((int(value[:-1])/100)*reference)
@@ -31,8 +37,15 @@ def to_pixels(
 		pass
 	return int(value)
 
-def fix_orientation(image) -> "the reorientated image":
-	"""Fix the orientation of an image using its exif data."""
+def fix_orientation(image):
+	"""Fix the orientation of an image using its exif data.
+	
+	Args:
+		image: A PIL image.
+		
+	Returns:
+		The reorientated PIL image.
+	"""
 	try:
 		orientation = image._getexif()[274]
 	except:
@@ -47,12 +60,17 @@ def fix_orientation(image) -> "the reorientated image":
 	else:
 		return image
 
-def rotate(
-		images: "multiple images",
-		rotations: "the rotation degrees of each image",
-		fill_color: "the color surrounding the images" = (255, 255, 255, 0)
-	) -> "the rotated images":
-	"""Rotate multiple images, keeping all of their sizes the same."""
+def rotate(images, rotations, fill_color = (255, 255, 255, 0)):
+	"""Rotate multiple images, keeping all of their sizes the same.
+	
+	Args:
+		images: Multiple PIL images.
+		rotations: The rotation degrees of each image.
+		fill_color: The color surrounding the images.
+	
+	Returns:
+		The rotated PIL images.
+	"""
 	images = list(images)
 	width = 0
 	height = 0
@@ -69,11 +87,16 @@ def rotate(
 		images[i] = image
 	return images
 
-def align(
-		images: "two images",
-		xy: "the horizontal and vertical movement of the second image"
-	) -> "the aligned images":
-	"""Align the second image to the first image."""
+def align(images, xy):
+	"""Align the second image to the first image.
+	
+	Args:
+		images: Two PIL images.
+		xy: The horizontal and vertical movement of the second image.
+		
+	Returns:
+		The aligned PIL images.
+	"""
 	x, y = xy
 	x_right = abs(x) if x>0 else 0
 	x_left = abs(x) if x<0 else 0
@@ -84,9 +107,17 @@ def align(
 		crop(images[0], (x_right, y_down, x_left, y_up)),
 		crop(images[1], (x_left, y_up, x_right, y_down))]
 
-def crop(image, box: "the crop amounts of each side in the order: left, top, right, bottom"
-	) -> "the cropped image":
-	"""Crop an image."""
+def crop(image, box):
+	"""Crop an image.
+	
+	Args:
+		image: A PIL image.
+		box: The amount to crop off each side.
+			The box side order is left, top, right, bottom.
+	
+	Return:
+		The cropped PIL image.
+	"""
 	left, top, right, bottom = box
 	return image.crop((
 		to_pixels(left, image.height),
@@ -94,10 +125,19 @@ def crop(image, box: "the crop amounts of each side in the order: left, top, rig
 		image.width-to_pixels(right, image.height),
 		image.height-to_pixels(bottom, image.width)))
 
-def resize(image, size: "the width and height", offset = "50%") -> "the resized image":
+def resize(image, size, offset = "50%"):
 	"""Resize an image.
 	
-	A size value of 0 is calculated automatically to preserve the aspect ratio.
+	A size value that is not larger than 0 is calculated automatically
+	to preserve the aspect ratio.
+	
+	Args:
+		image: A PIL image.
+		size: The width and height.
+		offset: The offset from the center.
+	
+	Returns:
+		The resized PIL image.
 	"""
 	width_ratio = size[0]/image.width
 	height_ratio = size[1]/image.height
@@ -121,22 +161,35 @@ def resize(image, size: "the width and height", offset = "50%") -> "the resized 
 		image = image.crop(offset_crop)
 	return image
 
-def squash(image,
-		horizontal: "squash the image horizontal instead of vertical" = True
-	) -> "the squashed image":
-	"""Squash an image to be half its width or height"""
+def squash(image, horizontal):
+	"""Squash an image to be half its width or height.
+	
+	Args:
+		image: A PIL image.
+		horizontal: If to squash the image horizontal instead of vertical.
+	
+	Returns:
+		The squashed PIL image.
+	"""
 	if horizontal:
 		new_size = (round(image.width/2), image.height)
 	else:
 		new_size = (image.width, round(image.height/2))
 	return image.resize(new_size, Image.ANTIALIAS)
 
-def create_side_by_side_image(
-		images: "two images",
-		horizontal: "join the images horizontal instead of vertical" = True,
-		divider_width: "width of a divider between the two joined images" = 0,
-		divider_color = (255, 255, 255, 0)):
-	"""Create a side-by-side image from two images."""
+def create_side_by_side_image(images, horizontal = True,
+		divider_width = 0, divider_color = (255, 255, 255, 0)):
+	"""Create a side-by-side image from two images.
+	
+	Args:
+		images: Two PIL images.
+		horizontal: If to join the images horizontal instead of vertical.
+		divider_width: Width of a divider between the two joined images.
+		divider_color: Color of the divider if set (R, G, B, A).
+		
+	Returns:
+		The side-by-side PIL image.
+	"""
 	if horizontal:
 		width = images[0].width * 2 + divider_width
 		height = images[0].height
@@ -205,25 +258,28 @@ _AG_DUBOIS = {
 		((-0.016, -0.123, -0.017), (0.006, 0.062, -0.017), (0.094, 0.185, 0.911)))
 }
 
-AG_LUMA_CODING_RGB = (1/3, 1/3, 1/3)
-AG_LUMA_CODING_REC601 = (0.299, 0.587, 0.114)
-AG_LUMA_CODING_REC709 = (0.2126, 0.7152, 0.0722)
+ANAGLYPH_LUMA_RGB = (1/3, 1/3, 1/3)
+ANAGLYPH_LUMA_REC601 = (0.299, 0.587, 0.114)
+ANAGLYPH_LUMA_REC709 = (0.2126, 0.7152, 0.0722)
 
-def create_anaglyph(
-		images: "two images",
-		method = "optimized",
-		color_scheme = "red-cyan",
-		luma_coding: "the luma coding for the gray and half-color methods" =
-			AG_LUMA_CODING_REC709
-	) -> "the anaglyph image":
+def create_anaglyph(images, method = "optimized",
+		color_scheme = "red-cyan", luma_coding = ANAGLYPH_LUMA_REC709):
 	"""Create an anaglyph image from two images.
 	
-	The non-complementary colors of the color schemes are mainly to be used with the gray method.
+	Args:
+		images: Two PIL images.
+		method: The anaglyph method.
+			The available methods are gray, color, half-color,
+			optimized and dubois.
+		color_scheme: The anaglyph color scheme.
+			The non-complementary colors of the color schemes are mainly
+			to be used with the gray method.
+			The available color schemes are red-green, red-blue,
+			red-cyan, green-magenta, amber-blue and magenta-cyan.
+		luma_coding: The luma coding for the gray and half-color methods.
 	
-	Available methods:
-		gray, color, half-color, optimized, dubois
-	Available color schemes:
-		red-green, red-blue, red-cyan, green-magenta, amber-blue, magenta-cyan
+	Returns:
+		The anaglyph PIL image.
 	"""
 	if method == "dubois":
 		try:
@@ -271,18 +327,16 @@ def create_anaglyph(
 		output_bands.append(ImageChops.lighter(left_bands[3], right_bands[3]))
 		return Image.merge("RGBA", output_bands)
 	return Image.merge("RGB", output_bands)
-
-def create_patterened_image(
-		images: "two images",
-		pattern = 1,
-		left_is_even: "set the first image to be the even line/square" = True
-	) -> "the patterened image":
-	"""Create a patterened image from two images.
 	
-	Choice of patterns:
-		0: checkerboard
-		1: interlaced horizontal (default)
-		2: interlaced vertical
+def create_interlaced_h_image(images, left_is_even):
+	"""Create an horizontally interlaced image from two images.
+	
+	Args:
+		images: Two PIL images.
+		left_is_even: Set the first image to be the even line/square.
+	
+	Returns:
+		The horizontally interlaced PIL image.
 	"""
 	output = images[0].copy()
 	o = output.load()
@@ -290,22 +344,59 @@ def create_patterened_image(
 	
 	for x in range(output.width):
 		for y in range(output.height):
-			if pattern == 0:
-				if (x + y) % 2 != left_is_even:
-					o[x,y] = r[x,y]
-			elif pattern == 1:
-				if y % 2 != left_is_even:
-					o[x,y] = r[x,y]
-			elif pattern == 2:
-				if x % 2 != left_is_even:
-					o[x,y] = r[x,y]
+			if y % 2 != left_is_even:
+				o[x,y] = r[x,y]
+	return output
+	
+def create_interlaced_v_image(images, left_is_even):
+	"""Create an vertically interlaced image from two images.
+	
+	Args:
+		images: Two PIL images.
+		left_is_even: Set the first image to be the even line/square.
+	
+	Returns:
+		The vertically interlaced PIL image.
+	"""
+	output = images[0].copy()
+	o = output.load()
+	r = images[1].load()
+	
+	for x in range(output.width):
+		for y in range(output.height):
+			if x % 2 != left_is_even:
+				o[x,y] = r[x,y]
 	return output
 
-def save_as_wiggle_gif_image(
-		output_file: "file name of the output GIF",
-		images: "multiple images",
-		total_duration: "the total duration for all the images to be shown before looping" = 200):
-	"""Save multiple images as a wiggle GIF image."""
+def create_checkerboard_image(images, left_is_even):
+	"""Create a checkerboard patterened image from two images.
+	
+	Args:
+		images: Two PIL images.
+		left_is_even: Set the first image to be the even line/square.
+	
+	Returns:
+		The checkerboard patterened PIL image.
+	"""
+	output = images[0].copy()
+	o = output.load()
+	r = images[1].load()
+	
+	for x in range(output.width):
+		for y in range(output.height):
+			if (x + y) % 2 != left_is_even:
+				o[x,y] = r[x,y]
+	return output
+
+def save_as_wiggle_gif_image(output_file, images, total_duration = 200):
+	"""Save multiple images as a wiggle GIF image.
+	
+	Args:
+		output_file: The file name of the output GIF.
+		images: Multiple PIL images.
+		total_duration: The total duration for all the images to be
+			shown before looping.
+	"""
 	images[0].save(output_file, format="gif", save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
 
 
@@ -460,21 +551,21 @@ def _main():
 	
 	if args.anaglyph:
 		if args.luma_coding == "rgb":
-			luma_coding = AG_LUMA_CODING_RGB
+			luma_coding = ANAGLYPH_LUMA_RGB
 		elif args.luma_coding == "rec601":
-			luma_coding = AG_LUMA_CODING_REC601
+			luma_coding = ANAGLYPH_LUMA_REC601
 		elif args.luma_coding == "rec709":
-			luma_coding = AG_LUMA_CODING_REC709
+			luma_coding = ANAGLYPH_LUMA_REC709
 		output = create_anaglyph(images, args.anaglyph_method, args.color_scheme, luma_coding)
 	elif args.wiggle:
 		save_as_wiggle_gif_image(image_output, images, args.duration)
 		return
 	elif args.interlaced_horizontal:
-		output = create_interweaved_image(images, 1, not args.odd)
+		output = create_interlaced_h_image(images, not args.odd)
 	elif args.interlaced_vertical:
-		output = create_patterened_image(images, 2, not args.odd)
+		output = create_interlaced_v_image(images, not args.odd)
 	elif args.checkerboard:
-		output = create_patterened_image(images, 0, not args.odd)
+		output = create_checkerboard_image(images, not args.odd)
 	else:
 		if not (args.cross_eye or args.parallel or
 			args.over_under or args.under_over):
