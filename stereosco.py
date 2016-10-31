@@ -17,7 +17,7 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from PIL import Image, ImageChops, ImageMath, ImageOps
+from PIL import Image, ImageChops, ImageMath
 
 def to_pixels(
 		value: "the value of either pixels or percentage ending with a percentage sign",
@@ -312,6 +312,7 @@ def save_as_wiggle_gif_image(
 def _main():
 	import sys
 	import argparse
+	from PIL import ImageOps
 	
 	parser = argparse.ArgumentParser(description="Convert 2 images into a stereoscopic 3D image", usage="%(prog)s [OPTION]... LEFT RIGHT [OUT] [OUT2]")
 	
