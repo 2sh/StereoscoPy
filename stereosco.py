@@ -59,11 +59,11 @@ def rotate(
 	for i in range(len(images)):
 		if rotations[i]:
 			images[i] = images[i].rotate(rotations[i], Image.BICUBIC, True)
-			width = max(images[i].size[0], width)
-			height = max(images[i].size[1], height)
+			width = max(images[i].width, width)
+			height = max(images[i].height, height)
 	for i in range(len(images)):
-		left = round((width-images[i].size[0])/2)
-		top = round((height-images[i].size[1])/2)
+		left = round((width-images[i].width)/2)
+		top = round((height-images[i].height)/2)
 		image = Image.new("RGBA", (width, height), fill_color)
 		image.paste(images[i], (left, top),	images[i])
 		images[i] = image
@@ -89,27 +89,27 @@ def crop(image, box: "the crop amounts of each side in the order: left, top, rig
 	"""Crop an image."""
 	left, top, right, bottom = box
 	return image.crop((
-		to_pixels(left, image.size[1]),
-		to_pixels(top, image.size[0]),
-		image.size[0]-to_pixels(right, image.size[1]),
-		image.size[1]-to_pixels(bottom, image.size[0])))
+		to_pixels(left, image.height),
+		to_pixels(top, image.width),
+		image.width-to_pixels(right, image.height),
+		image.height-to_pixels(bottom, image.width)))
 
 def resize(image, size: "the width and height", offset = "50%") -> "the resized image":
 	"""Resize an image.
 	
 	A size value of 0 is calculated automatically to preserve the aspect ratio.
 	"""
-	width_ratio = size[0]/image.size[0]
-	height_ratio = size[1]/image.size[1]
+	width_ratio = size[0]/image.width
+	height_ratio = size[1]/image.height
 	
 	offset_crop = None
 	if width_ratio > height_ratio:
-		re_size = (size[0], round(image.size[1] * width_ratio))
+		re_size = (size[0], round(image.height * width_ratio))
 		if size[1]:
 			offset = to_pixels(offset, re_size[1]-size[1])
 			offset_crop = (0, offset, size[0], size[1]+offset)
 	elif width_ratio < height_ratio:
-		re_size = (round(image.size[0] * height_ratio), size[1])
+		re_size = (round(image.width * height_ratio), size[1])
 		if size[0]:
 			offset = to_pixels(offset, re_size[0]-size[0])
 			offset_crop = (offset, 0, size[0]+offset, size[1])
@@ -126,9 +126,9 @@ def squash(image,
 	) -> "the squashed image":
 	"""Squash an image to be half its width or height"""
 	if horizontal:
-		new_size = (round(image.size[0]/2), image.size[1])
+		new_size = (round(image.width/2), image.height)
 	else:
-		new_size = (image.size[0], round(image.size[1]/2))
+		new_size = (image.width, round(image.height/2))
 	return image.resize(new_size, Image.ANTIALIAS)
 
 def create_side_by_side_image(
@@ -138,15 +138,15 @@ def create_side_by_side_image(
 		divider_color = (255, 255, 255, 0)):
 	"""Create a side-by-side image from two images."""
 	if horizontal:
-		width = images[0].size[0] * 2 + divider_width
-		height = images[0].size[1]
-		r_left = images[0].size[0] + divider_width
+		width = images[0].width * 2 + divider_width
+		height = images[0].height
+		r_left = images[0].width + divider_width
 		r_top = 0
 	else:
-		width = images[0].size[0]
-		height = images[0].size[1] * 2 + divider_width
+		width = images[0].width
+		height = images[0].height * 2 + divider_width
 		r_left = 0
-		r_top = images[0].size[1] + divider_width
+		r_top = images[0].height + divider_width
 	
 	output = Image.new("RGBA", (width, height), divider_color)
 	output.paste(images[0], (0, 0))
@@ -288,8 +288,8 @@ def create_patterened_image(
 	o = output.load()
 	r = images[1].load()
 	
-	for x in range(output.size[0]):
-		for y in range(output.size[1]):
+	for x in range(output.width):
+		for y in range(output.height):
 			if pattern == 0:
 				if (x + y) % 2 != left_is_even:
 					o[x,y] = r[x,y]
