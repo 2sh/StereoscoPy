@@ -229,8 +229,8 @@ _AG_METHODS = {
 		("rgb", "rgb"),
 	"half-color":
 		("lum", "rgb"),
-	"optimized": # wimmer
-		("opt", "rgb")
+	"wimmer":
+		("wim", "rgb")
 }
 
 _AG_COLOR_MATRICES = {
@@ -239,7 +239,7 @@ _AG_COLOR_MATRICES = {
 		(0, 1, 0),
 		(0, 0, 1)
 	),
-	"opt": (
+	"wim": (
 		(0, 0.7, 0.3),
 		(0.5, 0, 0.5), # ?
 		(0.5, 0.5, 0) # ?
@@ -262,7 +262,7 @@ ANAGLYPH_LUMA_RGB = (1/3, 1/3, 1/3)
 ANAGLYPH_LUMA_REC601 = (0.299, 0.587, 0.114)
 ANAGLYPH_LUMA_REC709 = (0.2126, 0.7152, 0.0722)
 
-def create_anaglyph(images, method = "optimized",
+def create_anaglyph(images, method = "wimmer",
 		color_scheme = "red-cyan", luma_coding = ANAGLYPH_LUMA_REC709):
 	"""Create an anaglyph image from two images.
 	
@@ -270,7 +270,7 @@ def create_anaglyph(images, method = "optimized",
 		images: Two PIL images.
 		method: The anaglyph method.
 			The available methods are gray, color, half-color,
-			optimized and dubois.
+			wimmer and dubois.
 		color_scheme: The anaglyph color scheme.
 			The non-complementary colors of the color schemes are mainly
 			to be used with the gray method.
@@ -316,7 +316,7 @@ def create_anaglyph(images, method = "optimized",
 			 "float(rr)*{rm[0]}+float(rg)*{rm[1]}+float(rb)*{rm[2]})"
 			).format(lm=matrices[0][i], rm=matrices[1][i])
 		
-		if method == "optimized" and colors[method_reverse][i]:
+		if method == "wimmer" and colors[method_reverse][i]:
 			expression = "((" + expression + "/255)**(1/" + str(1 + ([0.5, 0.2, 0.3][i] * colors[method_reverse][i])) + "))*255"
 		
 		output_bands.append(ImageMath.eval("convert(" + expression + ", 'L')",
@@ -460,8 +460,8 @@ def _main():
 		dest='anaglyph', action='store_true',
 		help="output an anaglyph image")
 	group.add_argument("-m", "--anaglyph-method",
-		dest='anaglyph_method', metavar="METHOD", type=str, default="optimized",
-		help="set the anaglyph method: gray, color, half-color, optimized, dubois [default: %(default)s]. The dubois method is only available with the red-cyan, green-magenta and amber-blue color schemes.")
+		dest='anaglyph_method', metavar="METHOD", type=str, default="wimmer",
+		help="set the anaglyph method: gray, color, half-color, wimmer, dubois [default: %(default)s]. The dubois method is only available with the red-cyan, green-magenta and amber-blue color schemes.")
 	group.add_argument("--cs", "--color-scheme",
 		dest='color_scheme', metavar="SCHEME", type=str, default="red-cyan",
 		help="set the anaglyph color scheme: red-green, red-blue, red-cyan, green-magenta, amber-blue, magenta-cyan [default: %(default)s]. The non-complementary colors are mainly to be used with the gray method.")
