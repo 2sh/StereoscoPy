@@ -327,64 +327,38 @@ def create_anaglyph(images, method = "wimmer",
 		output_bands.append(ImageChops.lighter(left_bands[3], right_bands[3]))
 		return Image.merge("RGBA", output_bands)
 	return Image.merge("RGB", output_bands)
-	
-def create_interlaced_h_image(images, left_is_even):
-	"""Create an horizontally interlaced image from two images.
-	
-	Args:
-		images: Two PIL images.
-		left_is_even: Set the first image to be the even line/square.
-	
-	Returns:
-		The horizontally interlaced PIL image.
-	"""
-	output = images[0].copy()
-	o = output.load()
-	r = images[1].load()
-	
-	for x in range(output.width):
-		for y in range(output.height):
-			if y % 2 != left_is_even:
-				o[x,y] = r[x,y]
-	return output
-	
-def create_interlaced_v_image(images, left_is_even):
-	"""Create an vertically interlaced image from two images.
-	
-	Args:
-		images: Two PIL images.
-		left_is_even: Set the first image to be the even line/square.
-	
-	Returns:
-		The vertically interlaced PIL image.
-	"""
-	output = images[0].copy()
-	o = output.load()
-	r = images[1].load()
-	
-	for x in range(output.width):
-		for y in range(output.height):
-			if x % 2 != left_is_even:
-				o[x,y] = r[x,y]
-	return output
 
-def create_checkerboard_image(images, left_is_even):
-	"""Create a checkerboard patterened image from two images.
+PATTERN_CHECKERBOARD = 0
+PATTERN_INTERLACED_H = 1
+PATTERN_INTERLACED_V = 2
+
+def create_patterned_image(images, pattern=PATTERN_INTERLACED_H, width=1, left_is_even=True):
+	"""Create a patterned image from two images.
 	
 	Args:
 		images: Two PIL images.
+		pattern: the pattern number.
+		width: the width of a line/square.
 		left_is_even: Set the first image to be the even line/square.
 	
 	Returns:
-		The checkerboard patterened PIL image.
+		The patterned PIL image.
 	"""
 	output = images[0].copy()
 	o = output.load()
 	r = images[1].load()
 	
+	is_even = True
+	two_width = width * 2
 	for x in range(output.width):
 		for y in range(output.height):
-			if (x + y) % 2 != left_is_even:
+			if pattern == PATTERN_INTERLACED_H:
+				is_even = (y % two_width) < width
+			elif pattern == PATTERN_INTERLACED_V:
+				is_even = (x % two_width) < width
+			elif pattern == PATTERN_CHECKERBOARD:
+				is_even = ((y % two_width) < width) == ((x % two_width) < width)
+			if is_even != left_is_even:
 				o[x,y] = r[x,y]
 	return output
 
@@ -477,7 +451,7 @@ def _main():
 		dest='duration', metavar="DURATION", type=int, default=300,
 		help="set the total duration of the wiggle GIF animation in milliseconds [default: %(default)s]")
 	
-	group = parser.add_argument_group('Patterened')
+	group = parser.add_argument_group('Patterned')
 	group.add_argument("--ih", "--interlaced-h",
 		dest='interlaced_horizontal', action='store_true',
 		help="output a horizontally interlaced image")
@@ -489,7 +463,10 @@ def _main():
 		help="output a checkerboard patterned image")
 	group.add_argument("--odd",
 		dest='odd', action='store_true',
-		help="set the left image to be the odd line or square of the pattern instead of the even one")
+		help="set the left image to be the odd line/square of the pattern instead of the even one")
+	group.add_argument("--pw", "--pattern-width",
+		dest='pattern_width', metavar="WIDTH", type=int, default=1,
+		help="set the width of a line/square of the pattern [default: %(default)s]")
 	
 	group = parser.add_argument_group('Preprocessing')
 	group.add_argument("-T", "--rotate",
@@ -561,11 +538,11 @@ def _main():
 		save_as_wiggle_gif_image(image_output, images, args.duration)
 		return
 	elif args.interlaced_horizontal:
-		output = create_interlaced_h_image(images, not args.odd)
+		output = create_patterned_image(images, PATTERN_INTERLACED_H, args.pattern_width, not args.odd)
 	elif args.interlaced_vertical:
-		output = create_interlaced_v_image(images, not args.odd)
+		output = create_patterned_image(images, PATTERN_INTERLACED_V, args.pattern_width, not args.odd)
 	elif args.checkerboard:
-		output = create_checkerboard_image(images, not args.odd)
+		output = create_patterned_image(images, PATTERN_CHECKERBOARD, args.pattern_width, not args.odd)
 	else:
 		if not (args.cross_eye or args.parallel or
 			args.over_under or args.under_over):
