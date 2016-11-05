@@ -317,7 +317,9 @@ def create_anaglyph(images, method = "wimmer",
 			).format(lm=matrices[0][i], rm=matrices[1][i])
 		
 		if method == "wimmer" and colors[method_reverse][i]:
-			expression = "((" + expression + "/255)**(1/" + str(1 + ([0.5, 0.2, 0.3][i] * colors[method_reverse][i])) + "))*255"
+			expression = ("((" + expression + "/255)**(1/" +
+				str(1 + (0.3 * colors[method_reverse][i])) +
+				"))*255")
 		
 		output_bands.append(ImageMath.eval("convert(" + expression + ", 'L')",
 			lr=left_bands[0], lg=left_bands[1], lb=left_bands[2],
@@ -350,8 +352,8 @@ def create_patterned_image(images, pattern=PATTERN_INTERLACED_H, width=1, left_i
 	
 	is_even = True
 	two_width = width * 2
-	for x in range(output.width):
-		for y in range(output.height):
+	for y in range(output.height):
+		for x in range(output.width):
 			if pattern == PATTERN_INTERLACED_H:
 				is_even = (y % two_width) < width
 			elif pattern == PATTERN_INTERLACED_V:
@@ -371,7 +373,8 @@ def save_as_wiggle_gif_image(output_file, images, total_duration = 200):
 		total_duration: The total duration for all the images to be
 			shown before looping.
 	"""
-	images[0].save(output_file, format="gif", save_all=True, loop=0, duration=round(total_duration/len(images)), append_images=images[1:])
+	images[0].save(output_file, format="gif", save_all=True, loop=0,
+		duration=round(total_duration/len(images)), append_images=images[1:])
 
 
 def _main():
@@ -379,7 +382,9 @@ def _main():
 	import argparse
 	from PIL import ImageOps
 	
-	parser = argparse.ArgumentParser(description="Convert 2 images into a stereoscopic 3D image", usage="%(prog)s [OPTION]... LEFT RIGHT [OUT] [OUT2]")
+	parser = argparse.ArgumentParser(
+		description="Convert 2 images into a stereoscopic 3D image",
+		usage="%(prog)s [OPTION]... LEFT RIGHT [OUT] [OUT2]")
 	
 	parser.add_argument("image_left",
 		metavar="LEFT", type=str,
@@ -489,7 +494,7 @@ def _main():
 		help="resize both images to WIDTHxHEIGHT. A value of 0 is calculated automatically to preserve the aspect ratio.")
 	group.add_argument("-O", "--offset",
 		dest='offset', type=str, default="50%",
-		help="set the resize offset from top or left in either pixels or percentage [default: %(default)s]")
+		help="set the resize offset from top or left in either pixels or percentage [default: %(default)s].")
 	
 	args = parser.parse_args()
 	
