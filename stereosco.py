@@ -307,8 +307,24 @@ def create_anaglyph(images, method = "wimmer",
 					color_band[2] * intensity))
 			matrices.append(tuple(matrix))
 	
-	left_bands = images[0].split()
-	right_bands = images[1].split()
+	left, right = images
+	if method == "wimmer" and color_scheme == "red-cyan":
+		left = left.copy()
+		right = right.copy()
+		
+		for i in left.load(), left.load():
+			for y in range(left.height):
+				for x in range(left.width):
+					c = list(i[x, y])
+					
+					if c[0] > c[1] and c[0] > c[1]:
+						c[1] = round(c[0]*0.3+c[1]*0.7)
+						c[2] = round(c[0]*0.3+c[2]*0.7)
+					
+					i[x, y] = tuple(c)
+	
+	left_bands = left.split()
+	right_bands = right.split()
 	output_bands = list()
 	for i in range(3):
 		expression = (
