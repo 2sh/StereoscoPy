@@ -18,6 +18,7 @@
 #
 
 from PIL import Image, ImageChops, ImageMath
+import math
 
 def to_pixels(value, reference):
 	"""Convert a percentage to pixels.
@@ -60,52 +61,99 @@ def fix_orientation(image):
 	else:
 		return image
 
-def rotate(images, rotations, fill_color = (255, 255, 255, 0)):
+def rotate(images, angles, shrink=False):
 	"""Rotate multiple images, keeping all of their sizes the same.
 	
 	Args:
 		images: Multiple PIL images.
-		rotations: The rotation degrees of each image.
-		fill_color: The color surrounding the images.
+		angles: The rotation angles in degrees counter clockwise of each image.
+		shrink: If the output images should be shrunk to crop off
+			the non-overlapping area, preserving the aspect ratio.
 	
 	Returns:
 		The rotated PIL images.
 	"""
-	images = list(images)
-	width = 0
-	height = 0
-	for i in range(len(images)):
-		if rotations[i]:
-			images[i] = images[i].rotate(rotations[i], Image.BICUBIC, True)
-			width = max(images[i].width, width)
-			height = max(images[i].height, height)
-	for i in range(len(images)):
-		left = round((width-images[i].width)/2)
-		top = round((height-images[i].height)/2)
-		image = Image.new("RGBA", (width, height), fill_color)
-		image.paste(images[i], (left, top),	images[i])
-		images[i] = image
-	return images
+	if shrink:
+		mode = images[0].mode
+	else:
+		mode = "RGBA"
+	new_width = 0
+	new_height = 0
+	output = list(images)
+	for i in range(len(output)):
+		if angles[i]:
+			output[i] = output[i].rotate(angles[i], Image.BICUBIC, expand=True)
+			
+		if angles[i] and shrink:
+			aspect_ratio = images[i].width / images[i].height
+			rotated_aspect_ratio = output[i].width / output[i].height
+			angle = math.fabs(angles[i]) * math.pi / 180
+			if aspect_ratio < 1:
+				total_height = images[i].width / rotated_aspect_ratio
+			else:
+				total_height = images[i].height
+			
+			height = total_height / (aspect_ratio * abs(math.sin(angle)) + abs(math.cos(angle)))
+			
+			width = math.floor(height * aspect_ratio)
+			height = math.floor(height)
+		else:
+			width = output[i].width
+			height = output[i].height
+		
+		if shrink:
+			new_width = min(width, new_width) if new_width else width
+			new_height = min(height, new_height) if new_height else height
+		else:
+			new_width = max(width, new_width)
+			new_height = max(height, new_height)
+	
+	for i in range(len(output)):
+		left = round((new_width - output[i].width) / 2)
+		top = round((new_height - output[i].height) / 2)
+		new = Image.new(mode, (new_width, new_height))
+		new.paste(output[i], (left, top), output[i])
+		output[i] = new
+	return output
 
-def align(images, xy):
+def align(images, xy, shrink=False):
 	"""Align the second image to the first image.
 	
 	Args:
 		images: Two PIL images.
 		xy: The horizontal and vertical movement of the second image.
+		shrink: If the output images should be shrunk to crop off
+			the non-overlapping area.
 		
 	Returns:
 		The aligned PIL images.
 	"""
 	x, y = xy
-	x_right = abs(x) if x>0 else 0
-	x_left = abs(x) if x<0 else 0
-	y_up = abs(y) if y>0 else 0
-	y_down = abs(y) if y<0 else 0
+	if shrink:
+		size = images[0].width-abs(x), images[0].height-abs(y)
+		mode = images[0].mode
+		lx = -x if x else 0
+		ly = -y if y else 0
+		rx = 0 if x else x
+		ry = 0 if y else y
+	else:
+		size = images[0].width+abs(x), images[0].height+abs(y)
+		mode = "RGBA"
+		lx = 0 if x else abs(x)
+		ly = 0 if y else abs(y)
+		rx = x if x else 0
+		ry = y if y else 0
 	
-	return [
-		crop(images[0], (x_right, y_down, x_left, y_up)),
-		crop(images[1], (x_left, y_up, x_right, y_down))]
+	output = list()
+	for i, image in enumerate(images):
+		new = Image.new(mode, size)
+		if i == 0:
+			new.paste(image, (lx, ly))
+		else:
+			new.paste(image, (rx, ry))
+		output.append(new)
+	
+	return output
 
 def crop(image, box):
 	"""Crop an image.
@@ -177,15 +225,13 @@ def squash(image, horizontal):
 		new_size = (image.width, round(image.height/2))
 	return image.resize(new_size, Image.ANTIALIAS)
 
-def create_side_by_side_image(images, horizontal = True,
-		divider_width = 0, divider_color = (255, 255, 255, 0)):
+def create_side_by_side_image(images, horizontal = True, divider_width = 0):
 	"""Create a side-by-side image from two images.
 	
 	Args:
 		images: Two PIL images.
 		horizontal: If to join the images horizontal instead of vertical.
 		divider_width: Width of a divider between the two joined images.
-		divider_color: Color of the divider if set (R, G, B, A).
 		
 	Returns:
 		The side-by-side PIL image.
@@ -200,8 +246,13 @@ def create_side_by_side_image(images, horizontal = True,
 		height = images[0].height * 2 + divider_width
 		r_left = 0
 		r_top = images[0].height + divider_width
+		
+	if divider_width:
+		mode = "RGBA"
+	else:
+		mode = images[0].mode
 	
-	output = Image.new("RGBA", (width, height), divider_color)
+	output = Image.new(mode, (width, height))
 	output.paste(images[0], (0, 0))
 	output.paste(images[1], (r_left, r_top))
 	return output
@@ -423,8 +474,8 @@ def _main():
 		help="set the output image format: JPG, PNG, GIF,... If left omitted, the format to use is determined from the filename extension.")
 	parser.add_argument("--bg",
 		dest='bg_color', type=int,
-		nargs=4, metavar=("RED", "GREEN", "BLUE", "ALPHA"), default=(255, 255, 255, 0),
-		help="set the background color and transparency (alpha): 0-255 each [default: 255, 255, 255, 0]. The default is white for JPEG and transparent for PNG. This is also the color for the divider and border.")
+		nargs=4, metavar=("RED", "GREEN", "BLUE", "ALPHA"), default=None,
+		help="set the background color and transparency (alpha): 0-255 each. This is also the color for the divider and border.")
 	parser.add_argument("--border",
 		dest='border', metavar="WIDTH", type=int, default=0,
 		help="surround the output image with a border of a given width")
@@ -498,6 +549,9 @@ def _main():
 		dest='align', type=int,
 		nargs=2, metavar=("X", "Y"), default=(0, 0),
 		help="align the right image in relation to the left image")
+	group.add_argument("-S", "--shrink",
+		dest='shrink', action='store_true',
+		help="set to shrink the images by cropping out the non-overlapping area after rotation (preserving the aspect ratio) and alignment.")
 	
 	group.add_argument("-C", "--crop",
 		dest='crop', type=str,
@@ -515,12 +569,12 @@ def _main():
 	args = parser.parse_args()
 	
 	if args.image_output:
-		image_output = args.image_output
+		args.image_output = args.image_output
 	else:
 		if args.format is None:
 			print("Either specify the output file name or the format to be used for outputting to STDOUT.", file=sys.stderr)
 			exit()
-		image_output = sys.stdout.buffer
+		args.image_output = sys.stdout.buffer
 	
 	images = [Image.open(args.image_left), Image.open(args.image_right)]
 	
@@ -535,10 +589,10 @@ def _main():
 			exit()
 	
 	if any(args.rotate):
-		images = rotate(images, args.rotate)
+		images = rotate(images, args.rotate, shrink=args.shrink)
 	
 	if any(args.align):
-		images = align(images, args.align)
+		images = align(images, args.align, shrink=args.shrink)
 	
 	for i, _ in enumerate(images):
 		if any(args.crop):
@@ -547,6 +601,7 @@ def _main():
 		if any(args.resize):
 			images[i] = resize(images[i], args.resize, args.offset)
 	
+	do_save = True
 	if args.anaglyph:
 		if args.luma_coding == "rgb":
 			luma_coding = ANAGLYPH_LUMA_RGB
@@ -554,16 +609,15 @@ def _main():
 			luma_coding = ANAGLYPH_LUMA_REC601
 		elif args.luma_coding == "rec709":
 			luma_coding = ANAGLYPH_LUMA_REC709
-		output = create_anaglyph(images, args.anaglyph_method, args.color_scheme, luma_coding)
-	elif args.wiggle:
-		save_as_wiggle_gif_image(image_output, images, args.duration)
-		return
+		images = [create_anaglyph(images, args.anaglyph_method, args.color_scheme, luma_coding)]
 	elif args.interlaced_horizontal:
-		output = create_patterned_image(images, PATTERN_INTERLACED_H, args.pattern_width, not args.odd)
+		images = [create_patterned_image(images, PATTERN_INTERLACED_H, args.pattern_width, not args.odd)]
 	elif args.interlaced_vertical:
-		output = create_patterned_image(images, PATTERN_INTERLACED_V, args.pattern_width, not args.odd)
+		images = [create_patterned_image(images, PATTERN_INTERLACED_V, args.pattern_width, not args.odd)]
 	elif args.checkerboard:
-		output = create_patterned_image(images, PATTERN_CHECKERBOARD, args.pattern_width, not args.odd)
+		images = [create_patterned_image(images, PATTERN_CHECKERBOARD, args.pattern_width, not args.odd)]
+	elif args.wiggle:
+		do_save = False
 	else:
 		if not (args.cross_eye or args.parallel or
 			args.over_under or args.under_over):
@@ -579,14 +633,28 @@ def _main():
 			images.reverse()
 		
 		if args.image_output2 is None:
-			output = create_side_by_side_image(images, is_horizontal, args.divider, args.bg_color)
+			images = [create_side_by_side_image(images, is_horizontal, args.divider)]
+	
+	for i, _ in enumerate(images):
+		if i == 0:
+			image_output = args.image_output
+		elif args.image_output2:
+			image_output = args.image_output2
 		else:
-			images[0].save(args.image_output, format=args.format, quality=args.quality, optimize=True)
-			images[1].save(args.image_output2, format=args.format, quality=args.quality, optimize=True)
-			return
-	if args.border:
-		output = ImageOps.expand(output, args.border, args.bg_color)
-	output.save(image_output, format=args.format, quality=args.quality, optimize=True)
+			break
+		
+		if args.border:
+			images[i] = ImageOps.expand(images[i], args.border)
+		
+		if args.bg_color and images[i].mode == "RGBA":
+			background_image = Image.new("RGBA", images[i].size, tuple(args.bg_color))
+			images[i] = Image.alpha_composite(background_image, images[i])
+		
+		if do_save:
+			images[i].save(image_output, format=args.format, quality=args.quality, optimize=True)
+	
+	if args.wiggle:
+		save_as_wiggle_gif_image(args.image_output, images, args.duration)
 
 if __name__ == '__main__':
 	_main()
