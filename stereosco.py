@@ -461,7 +461,7 @@ def _main():
 		help="right input image.")
 	parser.add_argument("image_output",
 		metavar="OUT", type=str, nargs='?',
-		help="output file. If left omitted, output to STDOUT, in which case the output format is required.")
+		help="output file. If left omitted, output to STDOUT, in which case the output format is required")
 	parser.add_argument("image_output2",
 		metavar="OUT2", type=str, nargs='?',
 		help="output an optional second image for split left and right")
@@ -471,11 +471,11 @@ def _main():
 		help="set the output image quality: 1-100 [default: %(default)s]")
 	parser.add_argument("-f", "--format",
 		dest='format', metavar="FORMAT", type=str,
-		help="set the output image format: JPG, PNG, GIF,... If left omitted, the format to use is determined from the filename extension.")
+		help="set the output image format: JPG, PNG, GIF,... If left omitted, the format to use is determined from the filename extension")
 	parser.add_argument("--bg",
 		dest='bg_color', type=int,
 		nargs=4, metavar=("RED", "GREEN", "BLUE", "ALPHA"), default=None,
-		help="set the background color and transparency (alpha): 0-255 each. This is also the color for the divider and border.")
+		help="set the background color and transparency (alpha): 0-255 each. This is also the color for the divider and border")
 	parser.add_argument("--border",
 		dest='border', metavar="WIDTH", type=int, default=0,
 		help="surround the output image with a border of a given width")
@@ -507,10 +507,10 @@ def _main():
 		help="output an anaglyph image")
 	group.add_argument("-m", "--anaglyph-method",
 		dest='anaglyph_method', metavar="METHOD", type=str, default="wimmer",
-		help="set the anaglyph method: gray, color, half-color, wimmer, dubois [default: %(default)s]. The dubois method is only available with the red-cyan, green-magenta and amber-blue color schemes.")
+		help="set the anaglyph method: gray, color, half-color, wimmer, dubois [default: %(default)s]. The dubois method is only available with the red-cyan, green-magenta and amber-blue color schemes")
 	group.add_argument("--cs", "--color-scheme",
 		dest='color_scheme', metavar="SCHEME", type=str, default="red-cyan",
-		help="set the anaglyph color scheme: red-green, red-blue, red-cyan, green-magenta, amber-blue, magenta-cyan [default: %(default)s]. The non-complementary colors are mainly to be used with the gray method.")
+		help="set the anaglyph color scheme: red-green, red-blue, red-cyan, green-magenta, amber-blue, magenta-cyan [default: %(default)s]. The non-complementary colors are mainly to be used with the gray method")
 	group.add_argument("--lc", "--luma-coding",
 		dest='luma_coding', metavar="CODING", type=str, default="rec709",
 		help="set the luma coding for the anaglyph gray and half-color methods: rgb, rec601 (PAL/NTSC), rec709 (HDTV) [default: %(default)s]")
@@ -544,27 +544,27 @@ def _main():
 	group.add_argument("-T", "--rotate",
 		dest='rotate', type=float,
 		nargs=2, metavar=("LEFT", "RIGHT"), default=(0, 0),
-		help="rotate both images in degrees")
+		help="rotate both images in degrees counter clockwise of the images")
 	group.add_argument("-A", "--align",
 		dest='align', type=int,
 		nargs=2, metavar=("X", "Y"), default=(0, 0),
 		help="align the right image in relation to the left image")
 	group.add_argument("-S", "--shrink",
 		dest='shrink', action='store_true',
-		help="set to shrink the images by cropping out the non-overlapping area after rotation (preserving the aspect ratio) and alignment.")
+		help="set to shrink the images by cropping out the non-overlapping area after rotation (preserving the aspect ratio) and alignment")
 	
 	group.add_argument("-C", "--crop",
 		dest='crop', type=str,
 		nargs=4, metavar=("LEFT", "TOP", "RIGHT", "BOTTOM"), default=(0, 0, 0, 0),
-		help="crop both images in either pixels or percentage")
+		help="crop both images in either pixels or percentage.")
 	
 	group.add_argument("-R", "--resize",
 		dest='resize', type=int,
 		nargs=2, metavar=("WIDTH", "HEIGHT"), default=(0, 0),
-		help="resize both images to WIDTHxHEIGHT. A value of 0 is calculated automatically to preserve the aspect ratio.")
+		help="resize both images to WIDTHxHEIGHT. A value of 0 is calculated automatically to preserve the aspect ratio")
 	group.add_argument("-O", "--offset",
 		dest='offset', type=str, default="50%",
-		help="set the resize offset from top or left in either pixels or percentage [default: %(default)s].")
+		help="set the resize offset from top or left in either pixels or percentage [default: %(default)s]")
 	
 	args = parser.parse_args()
 	
