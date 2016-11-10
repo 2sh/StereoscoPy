@@ -53,11 +53,11 @@ def fix_orientation(image):
 		return image
 	
 	if orientation == 3:
-		return image.rotate(180, expand=True)
+		return image.transpose(Image.ROTATE_180)
 	elif orientation == 6:
-		return image.rotate(270, expand=True)
+		return image.transpose(Image.ROTATE_270)
 	elif orientation == 8:
-		return image.rotate(90, expand=True)
+		return image.transpose(Image.ROTATE_90)
 	else:
 		return image
 
