@@ -18,6 +18,12 @@
 #
 
 from PIL import Image, ImageChops, ImageMath
+try:
+	import cv2
+	import numpy
+	is_auto_align_avail = True
+except:
+	is_auto_align_avail = False
 import math
 
 def to_pixels(value, reference):
@@ -60,6 +66,47 @@ def fix_orientation(image):
 		return image.transpose(Image.ROTATE_90)
 	else:
 		return image
+
+def auto_align(template_image, input_image, iterations=20, threshold=1e-10):
+	"""Auto align the input image to the template image.
+	
+	Args:
+		template_image: The image to align to.
+		input_image: The image to align.
+		iterations: The amount of iterations.
+		threshold: The accuracy threshold.
+	
+	Returns:
+		The aligned input image
+	"""
+	size = input_image.size
+	mode = input_image.mode
+	output_image = numpy.array(input_image)
+	if mode == "RGBA":
+		output_image = cv2.cvtColor(output_image, cv2.COLOR_RGBA2BGRA)
+	else:
+		output_image = cv2.cvtColor(output_image, cv2.COLOR_RGB2BGRA)
+	
+	images = [template_image, input_image]
+	
+	for i in range(len(images)):
+		images[i] = images[i].convert("L")
+		images[i].thumbnail((500, 500), Image.BILINEAR)
+		if i == 0:
+			ratio = size[0]/images[i].width
+		images[i] = numpy.array(images[i])
+	
+	criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, iterations, threshold)
+	
+	warp_matrix = numpy.eye(2, 3, dtype=numpy.float32)
+	(cc, warp_matrix) = cv2.findTransformECC(images[0], images[1], warp_matrix, cv2.MOTION_EUCLIDEAN, criteria)
+	
+	warp_matrix[0][2] *= ratio
+	warp_matrix[1][2] *= ratio
+	
+	output_image = cv2.warpAffine(output_image, warp_matrix, size, flags=cv2.INTER_CUBIC + cv2.WARP_INVERSE_MAP)
+	output_image = cv2.cvtColor(output_image, cv2.COLOR_BGRA2RGBA)
+	return Image.fromarray(output_image)
 
 def rotate(images, angles, shrink=False):
 	"""Rotate multiple images, keeping all of their sizes the same.
@@ -541,6 +588,11 @@ def _main():
 		help="set the width of a line/square of the pattern [default: %(default)s]")
 	
 	group = parser.add_argument_group('Preprocessing')
+	if is_auto_align_avail:
+		group.add_argument("-X", "--auto-align",
+			dest='auto_align', action='store_true',
+			help="auto align the right image to the left image")
+	
 	group.add_argument("-T", "--rotate",
 		dest='rotate', type=float,
 		nargs=2, metavar=("LEFT", "RIGHT"), default=(0, 0),
@@ -587,6 +639,9 @@ def _main():
 		if i > 0 and images[0].size != images[i].size:
 			print("Given images are not the same size!", file=sys.stderr)
 			exit()
+	
+	if is_auto_align_avail and args.auto_align:
+		images[1] = auto_align(images[0], images[1])
 	
 	if any(args.rotate):
 		images = rotate(images, args.rotate, shrink=args.shrink)
