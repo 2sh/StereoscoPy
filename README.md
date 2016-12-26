@@ -40,13 +40,13 @@ python3 stereosco.py -R 0 1080 -C 0 20% 0 20% -o left.jpg right.jpg out.jpg
 ```
 
 ###Wiggle GIF
-Align the right image to be 5 to the left and 30 down, and set the wiggle duration to 400 milliseconds
+Shift the right image to be 5 to the left and 30 down, and set the wiggle duration to 400 milliseconds
 ```
-python3 stereosco.py -R 800 0 -A -5 30 -wt 400 left.jpg right.jpg out.gif
+python3 stereosco.py -R 800 0 -S -5 30 -wt 400 left.jpg right.jpg out.gif
 ```
 
 ###Two separate image outputs
-Before converting to the stereoscopic outputs, I find this (or a slow wiggle GIF) to be a nice way to check for the correct dimensions and alignment by switching between the two output images in an image viewer.
+Before converting to the stereoscopic outputs, I find this (or a slow wiggle GIF) to be a nice way to check for the correct dimensions, shift and rotation by switching between the two output images in an image viewer.
 ```
-python3 stereosco.py --align 19 30 --crop 20% 0 0 0 --resize 1920 1080 --offset 100% --parallel left.jpg right.jpg out1.jpg out2.jpg
+python3 stereosco.py --shift 19 30 --crop 20% 0 0 0 --resize 1920 1080 --offset 100% --parallel left.jpg right.jpg out1.jpg out2.jpg
 ```

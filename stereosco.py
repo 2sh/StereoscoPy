@@ -18,13 +18,14 @@
 #
 
 from PIL import Image, ImageChops, ImageMath
+import math
+
 try:
 	import cv2
 	import numpy
-	is_auto_align_avail = True
-except:
-	is_auto_align_avail = False
-import math
+	_is_advanced_available = True
+except ImportError:
+	_is_advanced_available = False
 
 def to_pixels(value, reference):
 	"""Convert a percentage to pixels.
@@ -67,140 +68,199 @@ def fix_orientation(image):
 	else:
 		return image
 
-def auto_align(template_image, input_image, iterations=20, threshold=1e-10):
-	"""Auto align the input image to the template image.
+def _get_rotation_coordinates(matrix, size):
+	xs = [0]
+	ys = [0]
+	for x, y in [(0, size[1]), (size[0], 0), size]:
+		xs.append(matrix[0][0]*x + matrix[0][1]*y)
+		ys.append(matrix[1][0]*x + matrix[1][1]*y)
+	return xs, ys
+
+def transform(images, matrices, shrink=False):
+	"""Transform the images.
+	
+	The images are transformed by their matrices and either expanded or shruk
+	to the same size.
 	
 	Args:
-		template_image: The image to align to.
-		input_image: The image to align.
+		images: The PIL images.
+		matrices: The matrices for each image.
+		shrink: Whether the image is shrunk into or expanded around the
+			resulting picture.
+	
+	Returns:
+		The transformed images.
+	"""
+	output = []
+	
+	output_width = 0
+	output_height = 0
+	matrices = list(matrices)
+	for i, image in enumerate(images):
+		matrix = []
+		for row in matrices[i]:
+			matrix.append(list(row))
+		matrices[i] = matrix
+		
+		aspect_ratio = image.width / image.height
+		
+		xs, ys = _get_rotation_coordinates(matrix, image.size)
+		
+		min_x = min(xs)
+		max_x = max(xs)
+		min_y = min(ys)
+		max_y = max(ys)
+		
+		expanded_width = max_x - min_x
+		expanded_height = max_y - min_y
+		
+		a, b, h = matrix[0]
+		c, d, k = matrix[1]
+		
+		h += min_x+(expanded_width-image.width)/2
+		k += min_y+(expanded_height-image.height)/2
+		
+		margin_x = abs((d*h-b*k)/(a*d-b*c))
+		margin_y = abs((a*k-c*h)/(a*d-b*c))
+		
+		if shrink:
+			rotated_aspect_ratio = expanded_width / expanded_height
+			
+			if aspect_ratio < 1:
+				total_height = image.width / rotated_aspect_ratio
+			else:
+				total_height = image.height
+			angle = math.acos(matrix[0][0])
+			height = total_height / (aspect_ratio * abs(math.sin(angle)) + abs(math.cos(angle)))
+			
+			width = math.floor(height * aspect_ratio) - margin_x*2
+			height = math.floor(height) - margin_y*2
+			
+			height_from_width = width/aspect_ratio
+			if height_from_width < height:
+				height = height_from_width
+			elif height_from_width > height:
+				width = height * aspect_ratio
+			
+			output_width = min(output_width, width) if output_width else width
+			output_height = min(output_height, height) if output_height else height
+		else:
+			width = expanded_width + margin_x*2
+			height = expanded_height + margin_y*2
+			
+			height_from_width = width/aspect_ratio
+			if height_from_width > height:
+				height = height_from_width
+			elif height_from_width < height:
+				width = height * aspect_ratio
+			
+			output_width = max(output_width, width)
+			output_height = max(output_height, height)
+	
+	if shrink:
+		output_width = math.floor(output_width)
+		output_height = math.floor(output_height)
+	else:
+		output_width = math.ceil(output_width)
+		output_height = math.ceil(output_height)
+	
+	for i, image in enumerate(images):
+		matrix = matrices[i]
+		x = (output_width - image.size[0]) / 2
+		y = (output_height - image.size[1]) / 2
+		
+		matrix[0][2] -= matrix[0][0] * x + matrix[0][1] * y
+		matrix[1][2] -= matrix[1][0] * x + matrix[1][1] * y
+	
+		output.append(
+			image.transform((output_width, output_height),
+				Image.AFFINE, data=matrix[0]+matrix[1], resample=Image.BICUBIC))
+	return output
+
+def xy_and_angle_to_matrix(xy, angle, size):
+	"""Create a 3x3 transformation matrix
+	
+	Args:
+		xy: a tuple of the x and y dimensions.
+		angle: the angle in degrees.
+	
+	Returns:
+		The transformation matrix
+	"""
+	x, y = (xy if xy else (0, 0))
+	angle = math.radians(angle)
+	c = math.cos(angle)
+	s = math.sin(angle)
+	h = c*x + s*y
+	k = -s*x + c*y
+	
+	xs, ys = _get_rotation_coordinates(((c, s),(-s, c)), size)
+	
+	min_x = min(xs)
+	max_x = max(xs)
+	min_y = min(ys)
+	max_y = max(ys)
+	
+	expanded_size = (max_x-min_x, max_y-min_y)
+	
+	h -= min_x+(expanded_size[0]-size[0])/2
+	k -= min_y+(expanded_size[1]-size[1])/2
+	
+	return ((c, s, h), (-s, c, k), (0, 0, 1))
+
+def combine_matrices(matrix1, matrix2):
+	"""Combine the two matrices through multiplication.
+	
+	Args:
+		matrix1: The first matrix.
+		matrix2: The second matrix.
+	
+	Returns:
+		A matrix, combined from the two input matrices.
+	"""
+	m2_columns = list(zip(*matrix2))
+	return tuple([tuple([sum(a * b for a, b in zip(m1_row, m2_col))
+		for m2_col in m2_columns]) for m1_row in matrix1])
+
+def find_alignments(images, iterations=20, threshold=1e-10):
+	"""Find the alignment between two images.
+	
+	Args:
+		images: Two PIL images.
 		iterations: The amount of iterations.
 		threshold: The accuracy threshold.
 	
 	Returns:
-		The aligned input image
+		The alignment matrix for each image.
 	"""
-	size = input_image.size
-	mode = input_image.mode
-	output_image = numpy.array(input_image)
-	if mode == "RGBA":
-		output_image = cv2.cvtColor(output_image, cv2.COLOR_RGBA2BGRA)
-	else:
-		output_image = cv2.cvtColor(output_image, cv2.COLOR_RGB2BGRA)
+	ii = images
+	tn_size = 500
+	ratio = max(images[0].size)/tn_size
 	
-	images = [template_image, input_image]
-	
+	images = list(images)
 	for i in range(len(images)):
 		images[i] = images[i].convert("L")
-		images[i].thumbnail((500, 500), Image.BILINEAR)
-		if i == 0:
-			ratio = size[0]/images[i].width
+		#Runs on smaller image for speed
+		images[i].thumbnail((tn_size, tn_size), Image.BILINEAR)
 		images[i] = numpy.array(images[i])
 	
 	criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, iterations, threshold)
 	
-	warp_matrix = numpy.eye(2, 3, dtype=numpy.float32)
-	(cc, warp_matrix) = cv2.findTransformECC(images[0], images[1], warp_matrix, cv2.MOTION_EUCLIDEAN, criteria)
+	m = numpy.eye(2, 3, dtype=numpy.float32)
+	_, m = cv2.findTransformECC(images[0], images[1], m, cv2.MOTION_EUCLIDEAN, criteria)
 	
-	warp_matrix[0][2] *= ratio
-	warp_matrix[1][2] *= ratio
+	m[0,2] *= ratio
+	m[1,2] *= ratio
 	
-	output_image = cv2.warpAffine(output_image, warp_matrix, size, flags=cv2.INTER_CUBIC + cv2.WARP_INVERSE_MAP)
-	output_image = cv2.cvtColor(output_image, cv2.COLOR_BGRA2RGBA)
-	return Image.fromarray(output_image)
-
-def rotate(images, angles, shrink=False):
-	"""Rotate multiple images, keeping all of their sizes the same.
+	m[0,1] /= 2
+	m[0,2] /= 2
+	m[1,0] /= 2
+	m[1,2] /= 2
 	
-	Args:
-		images: Multiple PIL images.
-		angles: The rotation angles in degrees counter clockwise of each image.
-		shrink: If the output images should be shrunk to crop off
-			the non-overlapping area, preserving the aspect ratio.
+	l = ((m[0,0], -m[0,1], -m[0,2]), (-m[1,0], m[1,1], -m[1,2]), (0, 0, 1))
+	r = ((m[0,0], m[0,1], m[0,2]), (m[1,0], m[1,1], m[1,2]), (0, 0, 1))
 	
-	Returns:
-		The rotated PIL images.
-	"""
-	if shrink:
-		mode = images[0].mode
-	else:
-		mode = "RGBA"
-	new_width = 0
-	new_height = 0
-	output = list(images)
-	for i in range(len(output)):
-		if angles[i]:
-			output[i] = output[i].rotate(angles[i], Image.BICUBIC, expand=True)
-			
-		if angles[i] and shrink:
-			aspect_ratio = images[i].width / images[i].height
-			rotated_aspect_ratio = output[i].width / output[i].height
-			angle = math.fabs(angles[i]) * math.pi / 180
-			if aspect_ratio < 1:
-				total_height = images[i].width / rotated_aspect_ratio
-			else:
-				total_height = images[i].height
-			
-			height = total_height / (aspect_ratio * abs(math.sin(angle)) + abs(math.cos(angle)))
-			
-			width = math.floor(height * aspect_ratio)
-			height = math.floor(height)
-		else:
-			width = output[i].width
-			height = output[i].height
-		
-		if shrink:
-			new_width = min(width, new_width) if new_width else width
-			new_height = min(height, new_height) if new_height else height
-		else:
-			new_width = max(width, new_width)
-			new_height = max(height, new_height)
-	
-	for i in range(len(output)):
-		left = round((new_width - output[i].width) / 2)
-		top = round((new_height - output[i].height) / 2)
-		new = Image.new(mode, (new_width, new_height))
-		new.paste(output[i], (left, top), output[i])
-		output[i] = new
-	return output
-
-def align(images, xy, shrink=False):
-	"""Align the second image to the first image.
-	
-	Args:
-		images: Two PIL images.
-		xy: The horizontal and vertical movement of the second image.
-		shrink: If the output images should be shrunk to crop off
-			the non-overlapping area.
-		
-	Returns:
-		The aligned PIL images.
-	"""
-	x, y = xy
-	if shrink:
-		size = images[0].width-abs(x), images[0].height-abs(y)
-		mode = images[0].mode
-		lx = -x if x else 0
-		ly = -y if y else 0
-		rx = 0 if x else x
-		ry = 0 if y else y
-	else:
-		size = images[0].width+abs(x), images[0].height+abs(y)
-		mode = "RGBA"
-		lx = 0 if x else abs(x)
-		ly = 0 if y else abs(y)
-		rx = x if x else 0
-		ry = y if y else 0
-	
-	output = list()
-	for i, image in enumerate(images):
-		new = Image.new(mode, size)
-		if i == 0:
-			new.paste(image, (lx, ly))
-		else:
-			new.paste(image, (rx, ry))
-		output.append(new)
-	
-	return output
+	return [l, r]
 
 def crop(image, box):
 	"""Crop an image.
@@ -588,32 +648,32 @@ def _main():
 		help="set the width of a line/square of the pattern [default: %(default)s]")
 	
 	group = parser.add_argument_group('Preprocessing')
-	if is_auto_align_avail:
-		group.add_argument("-X", "--auto-align",
+	if _is_advanced_available:
+		group.add_argument("-A", "--auto-align",
 			dest='auto_align', action='store_true',
-			help="auto align the right image to the left image")
+			help="auto align the right image to the left image. The aspect ratio is preserved")
 	
 	group.add_argument("-T", "--rotate",
 		dest='rotate', type=float,
 		nargs=2, metavar=("LEFT", "RIGHT"), default=(0, 0),
-		help="rotate both images in degrees counter clockwise of the images")
-	group.add_argument("-A", "--align",
-		dest='align', type=int,
+		help="rotate both images in degrees counter clockwise. The aspect ratio is preserved")
+	group.add_argument("-S", "--shift",
+		dest='shift', type=float,
 		nargs=2, metavar=("X", "Y"), default=(0, 0),
-		help="align the right image in relation to the left image")
-	group.add_argument("-S", "--shrink",
-		dest='shrink', action='store_true',
-		help="set to shrink the images by cropping out the non-overlapping area after rotation (preserving the aspect ratio) and alignment")
+		help="shift the right image in relation to the left image. The aspect ratio is preserved")
+	group.add_argument("-X", "--expand",
+		dest='expand', action='store_true',
+		help="set to expand the images around the aligned/rotated pictures. The default is to shrink the images into the pictures, excluding the empty and non-overlapping areas")
 	
 	group.add_argument("-C", "--crop",
 		dest='crop', type=str,
 		nargs=4, metavar=("LEFT", "TOP", "RIGHT", "BOTTOM"), default=(0, 0, 0, 0),
-		help="crop both images in either pixels or percentage.")
+		help="crop both images in either pixels or percentage")
 	
 	group.add_argument("-R", "--resize",
 		dest='resize', type=int,
 		nargs=2, metavar=("WIDTH", "HEIGHT"), default=(0, 0),
-		help="resize both images to WIDTHxHEIGHT. A value of 0 is calculated automatically to preserve the aspect ratio")
+		help="resize both images to WIDTHxHEIGHT. The dimension with a value of 0 is calculated automatically to preserve the aspect ratio")
 	group.add_argument("-O", "--offset",
 		dest='offset', type=str, default="50%",
 		help="set the resize offset from top or left in either pixels or percentage [default: %(default)s]")
@@ -640,14 +700,22 @@ def _main():
 			print("Given images are not the same size!", file=sys.stderr)
 			exit()
 	
-	if is_auto_align_avail and args.auto_align:
-		images[1] = auto_align(images[0], images[1])
-	
-	if any(args.rotate):
-		images = rotate(images, args.rotate, shrink=args.shrink)
-	
-	if any(args.align):
-		images = align(images, args.align, shrink=args.shrink)
+	if any(args.shift) or any(args.rotate) or args.auto_align:
+		if args.auto_align:
+			matrices = find_alignments(images)
+		else:
+			matrices = [((1, 0, 0), (0, 1, 0), (0, 0, 1))]*2
+		
+		for i in range(2):
+			if i == 0:
+				xy = -args.shift[0], -args.shift[1]
+			else:
+				xy = args.shift
+		
+			matrix = xy_and_angle_to_matrix(xy, args.rotate[i], images[i].size)
+			matrices[i] = combine_matrices(matrices[i], matrix)
+		
+		images = transform(images, matrices, not args.expand)
 	
 	for i, _ in enumerate(images):
 		if any(args.crop):
