@@ -38,10 +38,10 @@ python3 stereosco.py -am dubois --cs amber-blue left.jpg right.jpg anaglyph_dubo
 ```
 
 ###Wiggle GIF
-Without alignment.
 ```
 python3 stereosco.py -R 450 0 -wt 400 left.jpg right.jpg simple.gif
 ```
+Without alignment
 ![alt text](/example_images/simple.gif?raw=true "Simple")
 
 Shifting an image moves the right image in relation to the left image. An images can be shifted after the auto align to change its center.
@@ -52,10 +52,10 @@ python3 stereosco.py -A -R 700 0 -S 1 0 -wt 200 left.jpg right.jpg align_shift.g
 
 ###Squashed Parallel (Left/Right) and Top/Bottom for TVs
 ```
-python3 stereosco.py -A -R 450 0 -S 1 0 -os left.jpg right.jpg tv_over_under.jpg
 python3 stereosco.py -A -R 450 0 -S 1 0 -ps left.jpg right.jpg tv_left_right.jpg
+python3 stereosco.py -A -R 450 0 -S 1 0 -os left.jpg right.jpg tv_over_under.jpg
 ```
-![alt text](/example_images/tv_over_under.jpg?raw=true "Left/Right")![alt text](/example_images/tv_left_right.jpg?raw=true "Top/Bottom")
+![alt text](/example_images/tv_left_right.jpg?raw=true "Top/Bottom")![alt text](/example_images/tv_over_under.jpg?raw=true "Left/Right")
 
 ###Two separate image outputs
 Before converting to the stereoscopic outputs, I find this (or a slow wiggle GIF) to be a nice way to check for the correct dimensions, shift and rotation by switching between the two output images in an image viewer.
