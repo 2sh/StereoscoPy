@@ -14,11 +14,11 @@ python3 stereosco.py --help
 ```
 
 ###Cross-eyed (Right/Left)
-With white 5px wide border and image division.
+With white 5px wide border and image division. Auto aligned, resized to be 450
+pixels in width and shifted horizontally by 1 pixel.
 ```
 python3 stereosco.py -A -R 450 0 -S 1 0 -x --div 5 --border 5 --bg 255 255 255 0 left.jpg right.jpg cross_eye.jpg
 ```
-Auto aligned, resized to be 450 pixels in width and shifted horizontally by 1 pixel.
 ![alt text](/example_images/cross_eye.jpg?raw=true "Cross eyed")
 
 ###Anaglyph
@@ -38,10 +38,10 @@ python3 stereosco.py -am dubois --cs amber-blue left.jpg right.jpg anaglyph_dubo
 ```
 
 ###Wiggle GIF
+Without alignment
 ```
 python3 stereosco.py -R 450 0 -wt 400 left.jpg right.jpg simple.gif
 ```
-Without alignment
 ![alt text](/example_images/simple.gif?raw=true "Simple")
 
 Shifting an image moves the right image in relation to the left image. An images can be shifted after the auto align to change its center.
