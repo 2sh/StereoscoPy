@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#	Stereosco.py, stereoscopic 3D image creator
+#	stereosco.py, stereoscopic 3D image creator
 #	Copyright (C) 2016 Sean Hewitt <contact@SeanHewitt.com>
 #
 #	This program is free software: you can redistribute it and/or modify
