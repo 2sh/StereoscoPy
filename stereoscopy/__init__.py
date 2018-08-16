@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 #
-#	stereosco.py, stereoscopic 3D image creator
-#	Copyright (C) 2016 Sean Hewitt <contact@SeanHewitt.com>
+#	StereoscoPy, stereoscopic 3D image creator
+#
+#	Copyright (C) 2016-2018 Seán Hewitt <contact@2sh.me>
 #
 #	This program is free software: you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License as published by
@@ -778,6 +779,3 @@ def _main():
 	
 	if args.wiggle:
 		save_as_wiggle_gif_image(args.image_output, images, args.duration)
-
-if __name__ == '__main__':
-	_main()
