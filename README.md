@@ -42,7 +42,7 @@ pixels in width and shifted horizontally by 1 pixel.
 ```
 StereoscoPy -A -R 400 0 -S 1 0 -x --div 5 --border 5 --bg 255 255 255 0 left.jpg right.jpg cross_eye.jpg
 ```
-![Cross eyed image](/example_images/cross_eye.jpg?raw=true "Cross eyed")
+![](/example_images/cross_eye.jpg?raw=true "Cross eyed")
 
 ### Anaglyph
 For red-cyan glasses, there are various methods for creating anaglyphs available.
@@ -53,9 +53,9 @@ StereoscoPy -A -R 400 0 -S 1 0 -am gray left.jpg right.jpg anaglyph_gray.jpg
 StereoscoPy -A -R 400 0 -S 1 0 -am color left.jpg right.jpg anaglyph_color.jpg
 StereoscoPy -A -R 400 0 -S 1 0 -am half-color left.jpg right.jpg anaglyph_half_color.jpg
 ```
-![Wimmer anaglyph](/example_images/anaglyph_wimmer.jpg?raw=true "Wimmer anaglyph") ![Dubois anaglyph](/example_images/anaglyph_dubois.jpg?raw=true "Dubois anaglyph")
-![Gray anaglyph](/example_images/anaglyph_gray.jpg?raw=true "Gray anaglyph") ![Color anaglyph](/example_images/anaglyph_color.jpg?raw=true "Color anaglyph")
-![Half-Color anaglyph](/example_images/anaglyph_half_color.jpg?raw=true "Half-Color anaglyph")
+![](/example_images/anaglyph_wimmer.jpg?raw=true "Wimmer anaglyph") ![](/example_images/anaglyph_dubois.jpg?raw=true "Dubois anaglyph")
+![](/example_images/anaglyph_gray.jpg?raw=true "Gray anaglyph") ![](/example_images/anaglyph_color.jpg?raw=true "Color anaglyph")
+![](/example_images/anaglyph_half_color.jpg?raw=true "Half-Color anaglyph")
 
 The Dubois anaglyph method for amber-blue glasses.
 ```
@@ -67,20 +67,20 @@ Without alignment
 ```
 StereoscoPy -R 400 0 -wt 400 left.jpg right.jpg simple.gif
 ```
-![Simple wiggle GIF image](/example_images/simple.gif?raw=true "Simple")
+![](/example_images/simple.gif?raw=true "Simple")
 
 Shifting an image moves the right image in relation to the left image. An images can be shifted after the auto align to change its center.
 ```
 StereoscoPy -A -R 400 0 -S 1 0 -wt 200 left.jpg right.jpg align_shift.gif
 ```
-![Aligned and shifted wiggle GIF image](/example_images/align_shift.gif?raw=true "Aligned and shifted")
+![](/example_images/align_shift.gif?raw=true "Aligned and shifted")
 
 ### Squashed Parallel (Left/Right) and Top/Bottom for TVs
 ```
 StereoscoPy -A -R 400 0 -S 1 0 -ps left.jpg right.jpg tv_left_right.jpg
 StereoscoPy -A -R 400 0 -S 1 0 -os left.jpg right.jpg tv_over_under.jpg
 ```
-![Left/right squashed image](/example_images/tv_left_right.jpg?raw=true "Top/Bottom") ![Left/right squashed image](/example_images/tv_over_under.jpg?raw=true "Left/Right")
+![](/example_images/tv_left_right.jpg?raw=true "Top/Bottom") ![](/example_images/tv_over_under.jpg?raw=true "Left/Right")
 
 ### Two separate image outputs
 Before converting to the stereoscopic outputs, I find this (or a slow wiggle GIF) to be a nice way to check for the correct dimensions, shift and rotation by switching between the two output images in an image viewer.
