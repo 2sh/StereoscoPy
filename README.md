@@ -22,7 +22,7 @@ pip install stereoscopy
 
 With the optional requirements for the auto align feature:
 ```
-pip install stereoscopy[auto_align]
+pip install "stereoscopy[auto_align]"
 ```
 
 Or download and run:
