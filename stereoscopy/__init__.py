@@ -20,13 +20,12 @@
 
 from PIL import Image, ImageChops, ImageMath
 import math
+import importlib
 
-try:
+if(importlib.util.find_spec("cv2") is not None and
+		importlib.util.find_spec("numpy") is not None):
 	import cv2
 	import numpy
-	_is_advanced_available = True
-except ImportError:
-	_is_advanced_available = False
 
 def to_pixels(value, reference):
 	"""Convert a percentage to pixels.
@@ -649,7 +648,7 @@ def _main():
 		help="set the width of a line/square of the pattern [default: %(default)s]")
 	
 	group = parser.add_argument_group('Preprocessing')
-	if _is_advanced_available:
+	if "cv2" in sys.modules and "numpy" in sys.modules:
 		group.add_argument("-A", "--auto-align",
 			dest='auto_align', action='store_true',
 			help="auto align the right image to the left image. The aspect ratio is preserved")
