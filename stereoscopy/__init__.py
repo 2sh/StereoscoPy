@@ -744,7 +744,7 @@ def _main():
 	else:
 		images = [Image.open(args.image_in), Image.open(args.image_in2)]
 	
-	for i, _ in enumerate(images):
+	for i in range(len(images)):
 		images[i] = fix_orientation(images[i])
 		
 		if images[i].mode not in ("RGB", "RGBA"):
@@ -771,7 +771,7 @@ def _main():
 		
 		images = transform(images, matrices, not args.expand)
 	
-	for i, _ in enumerate(images):
+	for i in range(len(images)):
 		if any(args.crop):
 			images[i] = crop(images[i], args.crop)
 		
@@ -807,7 +807,7 @@ def _main():
 		is_horizontal = args.cross_eye or args.parallel
 		
 		if args.squash:
-			for i, _ in enumerate(images):
+			for i in range(len(images)):
 				images[i] = squash(images[i], is_horizontal)
 		
 		if args.cross_eye or args.under_over:
@@ -817,14 +817,7 @@ def _main():
 			images = [create_side_by_side_image(
 				images, is_horizontal, args.divider)]
 	
-	for i, _ in enumerate(images):
-		if i == 0:
-			path = image_output
-		elif args.image_output2:
-			path = args.image_output2
-		else:
-			break
-		
+	for i in range(len(images)):
 		if args.border:
 			images[i] = ImageOps.expand(images[i], args.border)
 		
@@ -834,6 +827,10 @@ def _main():
 			images[i] = Image.alpha_composite(background_image, images[i])
 		
 		if do_save:
+			try:
+				path = (image_output, args.image_output2)[i]
+			except:
+				break
 			try:
 				images[i].save(path,
 					format=args.format, quality=args.quality, optimize=True)
