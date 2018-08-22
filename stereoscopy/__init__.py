@@ -747,7 +747,7 @@ def _main():
 	for i, _ in enumerate(images):
 		images[i] = fix_orientation(images[i])
 		
-		if images[i].mode != "RGB" or images[i].mode != "RGBA":
+		if images[i].mode not in ("RGB", "RGBA"):
 			images[i] = images[i].convert("RGBA")
 		
 		if i > 0 and images[0].size != images[i].size:
