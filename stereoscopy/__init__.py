@@ -554,21 +554,27 @@ def save_as_wiggle_gif_image(output_file, images, total_duration = 200):
 def _main():
 	import sys
 	import argparse
+	import io
 	from PIL import ImageOps
 	
 	parser = argparse.ArgumentParser(
 		description="Convert 2 images into a stereoscopic 3D image",
-		usage="%(prog)s [OPTION]... LEFT RIGHT [OUT] [OUT2]")
+		usage="%(prog)s [OPTION]... [IN] [IN2] [OUT] [OUT2]")
 	
-	parser.add_argument("image_left",
-		metavar="LEFT", type=str,
-		help="left input image")
-	parser.add_argument("image_right",
-		metavar="RIGHT", type=str,
-		help="right input image.")
+	parser.add_argument("image_in",
+		metavar="IN", type=str, nargs='?',
+		help="left input image or an MPO input file. If omitted or set to a "
+			"single dash (\"-\"), an MPO is read from STDIN")
+	parser.add_argument("image_in2",
+		metavar="IN2", type=str, nargs='?',
+		help="right input image. Set this to a single dash (\"-\") for "
+			"setting the output arguments when inputting from STDIN or "
+			"reading an MPO file")
 	parser.add_argument("image_output",
 		metavar="OUT", type=str, nargs='?',
-		help="output file. If left omitted, output to STDOUT, in which case the output format is required")
+		help="output file. If left omitted, output to STDOUT. If outputting "
+			"to STDOUT or the file extension is omitted, the output format "
+			"argument is required")
 	parser.add_argument("image_output2",
 		metavar="OUT2", type=str, nargs='?',
 		help="output an optional second image for split left and right")
@@ -681,14 +687,31 @@ def _main():
 	args = parser.parse_args()
 	
 	if args.image_output:
-		args.image_output = args.image_output
+		image_output = args.image_output
 	else:
-		if args.format is None:
+		if args.format is None and not args.wiggle:
 			print("Either specify the output file name or the format to be used for outputting to STDOUT.", file=sys.stderr)
 			exit()
-		args.image_output = sys.stdout.buffer
+		image_output = sys.stdout.buffer
 	
-	images = [Image.open(args.image_left), Image.open(args.image_right)]
+	if not args.image_in2 or args.image_in2 == "-":
+		if not args.image_in or args.image_in == "-":
+			image_in = io.BytesIO(sys.stdin.buffer.read())
+		else:
+			image_in = args.image_in
+		images = []
+		i = 0
+		while True:
+			image = Image.open(image_in)
+			try:
+				image.seek(i)
+			except EOFError:
+				break
+			images.append(image)
+			i += 1
+		del image_in
+	else:
+		images = [Image.open(args.image_in), Image.open(args.image_in2)]
 	
 	for i, _ in enumerate(images):
 		images[i] = fix_orientation(images[i])
@@ -760,9 +783,9 @@ def _main():
 	
 	for i, _ in enumerate(images):
 		if i == 0:
-			image_output = args.image_output
+			path = image_output
 		elif args.image_output2:
-			image_output = args.image_output2
+			path = args.image_output2
 		else:
 			break
 		
@@ -774,7 +797,7 @@ def _main():
 			images[i] = Image.alpha_composite(background_image, images[i])
 		
 		if do_save:
-			images[i].save(image_output, format=args.format, quality=args.quality, optimize=True)
+			images[i].save(path, format=args.format, quality=args.quality, optimize=True)
 	
 	if args.wiggle:
-		save_as_wiggle_gif_image(args.image_output, images, args.duration)
+		save_as_wiggle_gif_image(image_output, images, args.duration)
