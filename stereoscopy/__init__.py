@@ -284,7 +284,7 @@ def crop(image, box):
 		image.width-to_pixels(right, image.height),
 		image.height-to_pixels(bottom, image.width)))
 
-def resize(image, size, offset = "50%"):
+def resize(image, size, offset="50%"):
 	"""Resize an image.
 	
 	A size value that is not larger than 0 is calculated automatically
@@ -336,7 +336,7 @@ def squash(image, horizontal):
 		new_size = (image.width, round(image.height/2))
 	return image.resize(new_size, Image.ANTIALIAS)
 
-def create_side_by_side_image(images, horizontal = True, divider_width = 0):
+def create_side_by_side_image(images, horizontal=True, divider_width=0):
 	"""Create a side-by-side image from two images.
 	
 	Args:
@@ -424,8 +424,8 @@ ANAGLYPH_LUMA_RGB = (1/3, 1/3, 1/3)
 ANAGLYPH_LUMA_REC601 = (0.299, 0.587, 0.114)
 ANAGLYPH_LUMA_REC709 = (0.2126, 0.7152, 0.0722)
 
-def create_anaglyph(images, method = "wimmer",
-		color_scheme = "red-cyan", luma_coding = ANAGLYPH_LUMA_REC709):
+def create_anaglyph(images, method="wimmer",
+		color_scheme="red-cyan", luma_coding=ANAGLYPH_LUMA_REC709):
 	"""Create an anaglyph image from two images.
 	
 	Args:
@@ -545,7 +545,7 @@ def create_patterned_image(images,
 				o[x,y] = r[x,y]
 	return output
 
-def save_as_wiggle_gif_image(output_file, images, total_duration = 200):
+def save_as_wiggle_gif_image(output_file, images, total_duration=200):
 	"""Save multiple images as a wiggle GIF image.
 	
 	Args:
