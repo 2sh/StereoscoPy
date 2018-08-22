@@ -131,7 +131,8 @@ def transform(images, matrices, shrink=False):
 			else:
 				total_height = image.height
 			angle = math.acos(matrix[0][0])
-			height = total_height / (aspect_ratio * abs(math.sin(angle)) + abs(math.cos(angle)))
+			height = total_height / (aspect_ratio * abs(math.sin(angle)) +
+				abs(math.cos(angle)))
 			
 			width = math.floor(height * aspect_ratio) - margin_x*2
 			height = math.floor(height) - margin_y*2
@@ -142,8 +143,10 @@ def transform(images, matrices, shrink=False):
 			elif height_from_width > height:
 				width = height * aspect_ratio
 			
-			output_width = min(output_width, width) if output_width else width
-			output_height = min(output_height, height) if output_height else height
+			output_width = (min(output_width, width)
+				if output_width else width)
+			output_height = (min(output_height, height)
+				if output_height else height)
 		else:
 			width = expanded_width + margin_x*2
 			height = expanded_height + margin_y*2
@@ -172,9 +175,8 @@ def transform(images, matrices, shrink=False):
 		matrix[0][2] -= matrix[0][0] * x + matrix[0][1] * y
 		matrix[1][2] -= matrix[1][0] * x + matrix[1][1] * y
 	
-		output.append(
-			image.transform((output_width, output_height),
-				Image.AFFINE, data=matrix[0]+matrix[1], resample=Image.BICUBIC))
+		output.append(image.transform((output_width, output_height),
+			Image.AFFINE, data=matrix[0]+matrix[1], resample=Image.BICUBIC))
 	return output
 
 def xy_and_angle_to_matrix(xy, angle, size):
@@ -244,10 +246,12 @@ def find_alignments(images, iterations=20, threshold=1e-10):
 		images[i].thumbnail((tn_size, tn_size), Image.BILINEAR)
 		images[i] = numpy.array(images[i])
 	
-	criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, iterations, threshold)
+	criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT,
+		iterations, threshold)
 	
 	m = numpy.eye(2, 3, dtype=numpy.float32)
-	_, m = cv2.findTransformECC(images[0], images[1], m, cv2.MOTION_EUCLIDEAN, criteria)
+	_, m = cv2.findTransformECC(
+		images[0], images[1], m, cv2.MOTION_EUCLIDEAN, criteria)
 	
 	m[0,2] *= ratio
 	m[1,2] *= ratio
@@ -443,7 +447,8 @@ def create_anaglyph(images, method = "wimmer",
 		try:
 			matrices = _AG_DUBOIS[color_scheme]
 		except:
-			raise Exception("No Dubois matrices available for the specified color scheme")
+			raise Exception(
+				"No Dubois matrices available for the specified color scheme")
 	else:
 		if isinstance(color_scheme, str):
 			colors = _AG_COLOR_SCHEMES[color_scheme]
@@ -508,7 +513,8 @@ PATTERN_CHECKERBOARD = 0
 PATTERN_INTERLACED_H = 1
 PATTERN_INTERLACED_V = 2
 
-def create_patterned_image(images, pattern=PATTERN_INTERLACED_H, width=1, left_is_even=True):
+def create_patterned_image(images,
+		pattern=PATTERN_INTERLACED_H, width=1, left_is_even=True):
 	"""Create a patterned image from two images.
 	
 	Args:
@@ -533,7 +539,8 @@ def create_patterned_image(images, pattern=PATTERN_INTERLACED_H, width=1, left_i
 			elif pattern == PATTERN_INTERLACED_V:
 				is_even = (x % two_width) < width
 			elif pattern == PATTERN_CHECKERBOARD:
-				is_even = ((y % two_width) < width) == ((x % two_width) < width)
+				is_even = (((y % two_width) < width) ==
+					((x % two_width) < width))
 			if is_even != left_is_even:
 				o[x,y] = r[x,y]
 	return output
@@ -584,11 +591,13 @@ def _main():
 		help="set the output image quality: 1-100 [default: %(default)s]")
 	parser.add_argument("-f", "--format",
 		dest='format', metavar="FORMAT", type=str,
-		help="set the output image format: JPG, PNG, GIF,... If left omitted, the format to use is determined from the filename extension")
+		help="set the output image format: JPG, PNG, GIF,... If left omitted, "
+			"the format to use is determined from the filename extension")
 	parser.add_argument("--bg",
-		dest='bg_color', type=int,
-		nargs=4, metavar=("RED", "GREEN", "BLUE", "ALPHA"), default=None,
-		help="set the background color and transparency (alpha): 0-255 each. This is also the color for the divider and border")
+		dest='bg_color', type=int, nargs=4,
+		metavar=("RED", "GREEN", "BLUE", "ALPHA"), default=None,
+		help="set the background color and transparency (alpha): 0-255 each. "
+			"This is also the color for the divider and border")
 	parser.add_argument("--border",
 		dest='border', metavar="WIDTH", type=int, default=0,
 		help="surround the output image with a border of a given width")
@@ -609,7 +618,8 @@ def _main():
 	
 	group.add_argument("-s", "--squash",
 		dest='squash', action='store_true',
-		help="squash the sides to be half their width (cross-eye, parallel) or height (over/under, under/over)")
+		help="squash the sides to be half their width (cross-eye, parallel) "
+			"or height (over/under, under/over)")
 	group.add_argument("--div",
 		dest='divider', metavar="WIDTH", type=int, default=0,
 		help="separate the two sides with a divider of a given width")
@@ -620,13 +630,22 @@ def _main():
 		help="output an anaglyph image")
 	group.add_argument("-m", "--anaglyph-method",
 		dest='anaglyph_method', metavar="METHOD", type=str, default="wimmer",
-		help="set the anaglyph method: gray, color, half-color, wimmer, dubois [default: %(default)s]. The dubois method is only available with the red-cyan, green-magenta and amber-blue color schemes")
+		help="set the anaglyph method: "
+			"gray, color, half-color, wimmer, dubois [default: %(default)s]. "
+			"The dubois method is only available with the "
+			"red-cyan, green-magenta and amber-blue color schemes")
 	group.add_argument("--cs", "--color-scheme",
 		dest='color_scheme', metavar="SCHEME", type=str, default="red-cyan",
-		help="set the anaglyph color scheme: red-green, red-blue, red-cyan, green-magenta, amber-blue, magenta-cyan [default: %(default)s]. The non-complementary colors are mainly to be used with the gray method")
+		help="set the anaglyph color scheme: "
+			"red-green, red-blue, red-cyan, green-magenta, amber-blue, "
+			"magenta-cyan [default: %(default)s]. "
+			"The non-complementary colors are mainly to be used with the "
+			"gray method")
 	group.add_argument("--lc", "--luma-coding",
 		dest='luma_coding', metavar="CODING", type=str, default="rec709",
-		help="set the luma coding for the anaglyph gray and half-color methods: rgb, rec601 (PAL/NTSC), rec709 (HDTV) [default: %(default)s]")
+		help="set the luma coding "
+			"for the anaglyph gray and half-color methods: "
+			"rgb, rec601 (PAL/NTSC), rec709 (HDTV) [default: %(default)s]")
 	
 	group = parser.add_argument_group('Animated')
 	group.add_argument("-w", "--wiggle",
@@ -634,7 +653,8 @@ def _main():
 		help="output a wiggle GIF image")
 	group.add_argument("-t", "--duration",
 		dest='duration', metavar="DURATION", type=int, default=300,
-		help="set the total duration of the wiggle GIF animation in milliseconds [default: %(default)s]")
+		help="set the total duration of the wiggle GIF animation "
+			"in milliseconds [default: %(default)s]")
 	
 	group = parser.add_argument_group('Patterned')
 	group.add_argument("--ih", "--interlaced-h",
@@ -648,41 +668,51 @@ def _main():
 		help="output a checkerboard patterned image")
 	group.add_argument("--odd",
 		dest='odd', action='store_true',
-		help="set the left image to be the odd line/square of the pattern instead of the even one")
+		help="set the left image to be the odd line/square of the pattern "
+			"instead of the even one")
 	group.add_argument("--pw", "--pattern-width",
 		dest='pattern_width', metavar="WIDTH", type=int, default=1,
-		help="set the width of a line/square of the pattern [default: %(default)s]")
+		help="set the width of a line/square "
+			"of the pattern [default: %(default)s]")
 	
 	group = parser.add_argument_group('Preprocessing')
 	if "cv2" in sys.modules and "numpy" in sys.modules:
 		group.add_argument("-A", "--auto-align",
 			dest='auto_align', action='store_true',
-			help="auto align the right image to the left image. The aspect ratio is preserved")
+			help="auto align the right image to the left image. "
+				"The aspect ratio is preserved")
 	
 	group.add_argument("-T", "--rotate",
-		dest='rotate', type=float,
-		nargs=2, metavar=("LEFT", "RIGHT"), default=(0, 0),
-		help="rotate both images in degrees counter clockwise. The aspect ratio is preserved")
+		dest='rotate', type=float, nargs=2,
+		metavar=("LEFT", "RIGHT"), default=(0, 0),
+		help="rotate both images in degrees counter clockwise. "
+			"The aspect ratio is preserved")
 	group.add_argument("-S", "--shift",
-		dest='shift', type=float,
-		nargs=2, metavar=("X", "Y"), default=(0, 0),
-		help="shift the right image in relation to the left image. The aspect ratio is preserved")
+		dest='shift', type=float, nargs=2,
+		metavar=("X", "Y"), default=(0, 0),
+		help="shift the right image in relation to the left image. "
+			"The aspect ratio is preserved")
 	group.add_argument("-X", "--expand",
 		dest='expand', action='store_true',
-		help="set to expand the images around the aligned/rotated pictures. The default is to shrink the images into the pictures, excluding the empty and non-overlapping areas")
+		help="set to expand the images around the aligned/rotated pictures. "
+			"The default is to shrink the images into the pictures, "
+			"excluding the empty and non-overlapping areas")
 	
 	group.add_argument("-C", "--crop",
-		dest='crop', type=str,
-		nargs=4, metavar=("LEFT", "TOP", "RIGHT", "BOTTOM"), default=(0, 0, 0, 0),
+		dest='crop', type=str, nargs=4,
+		metavar=("LEFT", "TOP", "RIGHT", "BOTTOM"), default=(0, 0, 0, 0),
 		help="crop both images in either pixels or percentage")
 	
 	group.add_argument("-R", "--resize",
-		dest='resize', type=int,
-		nargs=2, metavar=("WIDTH", "HEIGHT"), default=(0, 0),
-		help="resize both images to WIDTHxHEIGHT. The dimension with a value of 0 is calculated automatically to preserve the aspect ratio")
+		dest='resize', type=int, nargs=2,
+		metavar=("WIDTH", "HEIGHT"), default=(0, 0),
+		help="resize both images to WIDTHxHEIGHT. "
+			"The dimension with a value of 0 is calculated automatically "
+			"to preserve the aspect ratio")
 	group.add_argument("-O", "--offset",
 		dest='offset', type=str, default="50%",
-		help="set the resize offset from top or left in either pixels or percentage [default: %(default)s]")
+		help="set the resize offset from top or left "
+			"in either pixels or percentage [default: %(default)s]")
 	
 	args = parser.parse_args()
 	
@@ -690,7 +720,8 @@ def _main():
 		image_output = args.image_output
 	else:
 		if args.format is None and not args.wiggle:
-			print("Either specify the output file name or the format to be used for outputting to STDOUT.", file=sys.stderr)
+			print("Either specify the output file name or the format "
+				"to be used for outputting to STDOUT.", file=sys.stderr)
 			exit()
 		image_output = sys.stdout.buffer
 	
@@ -755,13 +786,17 @@ def _main():
 			luma_coding = ANAGLYPH_LUMA_REC601
 		elif args.luma_coding == "rec709":
 			luma_coding = ANAGLYPH_LUMA_REC709
-		images = [create_anaglyph(images, args.anaglyph_method, args.color_scheme, luma_coding)]
+		images = [create_anaglyph(
+			images, args.anaglyph_method, args.color_scheme, luma_coding)]
 	elif args.interlaced_horizontal:
-		images = [create_patterned_image(images, PATTERN_INTERLACED_H, args.pattern_width, not args.odd)]
+		images = [create_patterned_image(
+			images, PATTERN_INTERLACED_H, args.pattern_width, not args.odd)]
 	elif args.interlaced_vertical:
-		images = [create_patterned_image(images, PATTERN_INTERLACED_V, args.pattern_width, not args.odd)]
+		images = [create_patterned_image(
+			images, PATTERN_INTERLACED_V, args.pattern_width, not args.odd)]
 	elif args.checkerboard:
-		images = [create_patterned_image(images, PATTERN_CHECKERBOARD, args.pattern_width, not args.odd)]
+		images = [create_patterned_image(
+			images, PATTERN_CHECKERBOARD, args.pattern_width, not args.odd)]
 	elif args.wiggle:
 		do_save = False
 	else:
@@ -779,7 +814,8 @@ def _main():
 			images.reverse()
 		
 		if args.image_output2 is None:
-			images = [create_side_by_side_image(images, is_horizontal, args.divider)]
+			images = [create_side_by_side_image(
+				images, is_horizontal, args.divider)]
 	
 	for i, _ in enumerate(images):
 		if i == 0:
@@ -793,7 +829,8 @@ def _main():
 			images[i] = ImageOps.expand(images[i], args.border)
 		
 		if args.bg_color and images[i].mode == "RGBA":
-			background_image = Image.new("RGBA", images[i].size, tuple(args.bg_color))
+			background_image = Image.new(
+				"RGBA", images[i].size, tuple(args.bg_color))
 			images[i] = Image.alpha_composite(background_image, images[i])
 		
 		if do_save:
