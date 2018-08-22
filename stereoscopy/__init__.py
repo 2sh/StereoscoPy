@@ -797,7 +797,12 @@ def _main():
 			images[i] = Image.alpha_composite(background_image, images[i])
 		
 		if do_save:
-			images[i].save(path, format=args.format, quality=args.quality, optimize=True)
+			try:
+				images[i].save(path,
+					format=args.format, quality=args.quality, optimize=True)
+			except OSError:
+				images[i].convert("RGB").save(path,
+					format=args.format, quality=args.quality, optimize=True)
 	
 	if args.wiggle:
 		save_as_wiggle_gif_image(image_output, images, args.duration)
