@@ -369,64 +369,276 @@ def create_side_by_side_image(images, horizontal=True, divider_width=0):
 	return output
 
 
-_AG_COLOR_SCHEMES = {
-	"red-green": (
-		(1, 0, 0), (0, 1, 0)),
-	"red-blue": (
-		(1, 0, 0), (0, 0, 1)),
-	"red-cyan": (
-		(1, 0, 0), (0, 1, 1)),
-	"green-magenta": (
-		(0, 1, 0), (1, 0, 1)),
-	"amber-blue": (
-		(0.9, 1, 0), (0, 0, 0.7)),
-	"magenta-cyan": (
-		(1, 0, 1), (0, 1, 1))
-}
-
-_AG_METHODS = {
-	"gray":
-		("lum", "lum"),
-	"color":
-		("rgb", "rgb"),
-	"half-color":
-		("lum", "rgb"),
-	"wimmer":
-		("wim", "rgb")
-}
-
-_AG_COLOR_MATRICES = {
-	"rgb": (
-		(1, 0, 0),
-		(0, 1, 0),
-		(0, 0, 1)
-	),
-	"wim": (
-		(0, 0.7, 0.3),
-		(0.5, 0, 0.5), # ?
-		(0.5, 0.5, 0) # ?
-	)
-}
-
-_AG_DUBOIS = {
-	"red-cyan": (
-		((0.456, 0.500, 0.175), (-0.040, -0.038, -0.016), (-0.015, -0.021, -0.005)),
-		((-0.043, -0.088, -0.002), (0.378, 0.734, -0.018), (-0.072, -0.113, 1.226))),
-	"green-magenta": (
-		((-0.062, -0.158, -0.039), (0.284, 0.668, 0.143), (-0.015, -0.027, 0.021)),
-		((0.529, 0.705, 0.024), (-0.016, -0.015, -0.065), (0.009, 0.075, 0.937))),
-	"amber-blue": (
-		((1.062, -0.205, 0.299), (-0.026, 0.908, 0.068), (-0.038, -0.173, 0.022)),
-		((-0.016, -0.123, -0.017), (0.006, 0.062, -0.017), (0.094, 0.185, 0.911)))
-}
-
 ANAGLYPH_LUMA_RGB = (1/3, 1/3, 1/3)
 ANAGLYPH_LUMA_REC601 = (0.299, 0.587, 0.114)
 ANAGLYPH_LUMA_REC709 = (0.2126, 0.7152, 0.0722)
 
+_DEFAULT_AG_CS = "red-cyan"
+_DEFAULT_AG_LUMA = ANAGLYPH_LUMA_REC709
+
+class AnaglyphMethod:
+	'''A class that represents an anaglyph method
+	
+	This class is used to create an anaglyph method with which to create
+	anaglyph images.
+	
+	The built-in anaglyph methods available are constructed using the class
+	methods *gray*, *color*, *halfColor*, *wimmer* and *dubois*.
+	You may inherit this class to create further anaglyph methods.
+	
+	The available color schemes for these are "red-green", "red-blue",
+	"red-cyan", "green-magenta", "amber-blue" and "magenta-cyan".
+	These are the colors of the viewing glasses. The dubois class method only
+	takes the "red-cyan", "green-magenta" and "amber-blue" color schemes.
+	red-cyan is the default.
+	
+	There are 3 luma coding constants available in this module:
+	ANAGLYPH_LUMA_RGB, ANAGLYPH_LUMA_REC601 (PAL/NTSC) and
+	ANAGLYPH_LUMA_REC709 (HDTV). ANAGLYPH_LUMA_REC709 is the default.
+	
+	If a subclass overrides the constructor, it must make sure to invoke the
+	base class constructor (Thread.__init__()).
+	
+	Args:
+		matrices: A tuple of 2 anaglyph matrices in the form of
+			((XR,XG,XB),(YR,YG,YB),(ZR,ZG,ZB)).
+	'''
+	
+	_METHODS = {
+		"gray":
+			("lum", "lum"),
+		"color":
+			("rgb", "rgb"),
+		"half-color":
+			("lum", "rgb"),
+		"wimmer":
+			("wim", "rgb")
+	}
+	
+	_COLOR_SCHEMES = {
+		"red-green": (
+			(1, 0, 0), (0, 1, 0)),
+		"red-blue": (
+			(1, 0, 0), (0, 0, 1)),
+		"red-cyan": (
+			(1, 0, 0), (0, 1, 1)),
+		"green-magenta": (
+			(0, 1, 0), (1, 0, 1)),
+		"amber-blue": (
+			(0.9, 1, 0), (0, 0, 0.7)),
+		"magenta-cyan": (
+			(1, 0, 1), (0, 1, 1))
+	}
+	
+	_COLOR_MATRICES = {
+		"rgb": (
+			(1, 0, 0),
+			(0, 1, 0),
+			(0, 0, 1)
+		),
+		"wim": (
+			(0, 0.7, 0.3),
+			(0.5, 0, 0.5), # ?
+			(0.5, 0.5, 0) # ?
+		)
+	}
+	
+	_DUBOIS = {
+		"red-cyan": (
+			((0.456, 0.500, 0.175), (-0.040, -0.038, -0.016), (-0.015, -0.021, -0.005)),
+			((-0.043, -0.088, -0.002), (0.378, 0.734, -0.018), (-0.072, -0.113, 1.226))),
+		"green-magenta": (
+			((-0.062, -0.158, -0.039), (0.284, 0.668, 0.143), (-0.015, -0.027, 0.021)),
+			((0.529, 0.705, 0.024), (-0.016, -0.015, -0.065), (0.009, 0.075, 0.937))),
+		"amber-blue": (
+			((1.062, -0.205, 0.299), (-0.026, 0.908, 0.068), (-0.038, -0.173, 0.022)),
+			((-0.016, -0.123, -0.017), (0.006, 0.062, -0.017), (0.094, 0.185, 0.911)))
+	}
+	
+	def __init__(self, matrices):
+		self.matrices = matrices
+	
+	@classmethod
+	def _simple(cls, method_name, color_scheme, luma_coding=_DEFAULT_AG_LUMA):
+		colors = cls._COLOR_SCHEMES[color_scheme]
+		method = cls._METHODS[method_name]
+		is_reversed = sum(colors[0]) > sum(colors[1])
+		if is_reversed:
+			method = (method[1], method[0])
+		matrices = []
+		for matrix_name, color in zip(method, colors):
+			matrix = []
+			if matrix_name == "lum":
+				color_matrix = (luma_coding,)*3
+			else:
+				color_matrix = cls._COLOR_MATRICES[matrix_name]
+			for color_band, intensity in zip(color_matrix, color):
+				matrix.append((
+					color_band[0] * intensity,
+					color_band[1] * intensity,
+					color_band[2] * intensity))
+			matrices.append(tuple(matrix))
+		
+		obj = cls(matrices)
+		obj.is_reversed = is_reversed
+		obj.colors = colors
+		return obj
+	
+	@classmethod
+	def gray(cls, color_scheme=_DEFAULT_AG_CS,
+			luma_coding=_DEFAULT_AG_LUMA):
+		'''The gray anaglyph method
+		
+		Args:
+			color_scheme: The color scheme.
+			luma_coding: The luma coding.
+		'''
+		return cls._simple("gray", color_scheme, luma_coding)
+	
+	@classmethod
+	def color(cls, color_scheme=_DEFAULT_AG_CS):
+		'''The color anaglyph method
+		
+		Args:
+			color_scheme: The color scheme.
+		'''
+		return cls._simple("color", color_scheme)
+	
+	@classmethod
+	def halfColor(cls, color_scheme=_DEFAULT_AG_CS,
+			luma_coding=_DEFAULT_AG_LUMA):
+		'''The half color anaglyph method
+		
+		Args:
+			color_scheme: The color scheme.
+			luma_coding: The luma coding.
+		'''
+		return cls._simple("half-color", color_scheme, luma_coding)
+	
+	@classmethod
+	def wimmer(cls, color_scheme=_DEFAULT_AG_CS):
+		'''The wimmer anaglyph method
+		
+		Args:
+			color_scheme: The color scheme.
+		'''
+		obj = cls._simple("wimmer", color_scheme)
+		if color_scheme == "red-cyan":
+			obj.process_images = obj._process_images_wimmer
+		obj.process_expression = obj._process_expression_wimmer
+		return obj
+	
+	def _process_images_wimmer(self, images):
+		left = images[0].copy()
+		right = images[1].copy()
+		
+		for i in left.load(), left.load():
+			for y in range(left.height):
+				for x in range(left.width):
+					c = list(i[x, y])
+					
+					if c[0] > c[1] and c[0] > c[1]:
+						c[1] = round(c[0]*0.3+c[1]*0.7)
+						c[2] = round(c[0]*0.3+c[2]*0.7)
+					
+					i[x, y] = tuple(c)
+		return left, right
+	
+	def _process_expression_wimmer(self, band_i, expression):
+		if self.colors[self.is_reversed][band_i]:
+			return ("((" + expression + "/255)**(1/" +
+				str(1 + (0.3 * self.colors[self.is_reversed][band_i])) +
+				"))*255")
+		return expression
+	
+	@classmethod
+	def dubois(cls, color_scheme=_DEFAULT_AG_CS):
+		'''The dubois anaglyph method
+		
+		Args:
+			color_scheme: The color scheme.
+		'''
+		return cls(cls._DUBOIS[color_scheme])
+	
+	
+	def process_images(self, images):
+		'''Process the initial images
+		
+		You may override this method in a subclass. Without an override, this
+		method simply passes through the images.
+		
+		This gets called at the start of the anaglyph creation. It takes and
+		returns the images to be turned into an anaglyph image. It is best
+		to use the image copy method to make sure not to manipulate the
+		original input images.
+		
+		Args:
+			images: The two PIL images to be turned into an anaglyph image.
+		
+		Returns:
+			The processed images.
+		'''
+		return images
+	
+	def process_expression(self, band_i, expression):
+		'''Process the image expression
+		
+		You may override this method in a subclass. Without an override, this
+		method simply passes throught the expression.
+		
+		This gets called for each color band of the 2 images: red, green and
+		blue. It takes and returns the image expression used to create the
+		anaglyph image. This expression is used by the
+		Pillow PIL.ImageMath.eval method and its syntax is explained in its
+		documentation.
+		
+		Args:
+			band_i: The band index starting from 0 for red, green and blue.
+			expression: The image expression.
+		
+		Returns:
+			The processed expression.
+		'''
+		return expression
+	
+	def createAnaglyph(self, images):
+		'''Create an anaglyph image from two images.
+		
+		Args:
+			images: Two PIL images.
+		
+		Returns:
+			The anaglyph PIL image.
+		'''
+		left, right = self.process_images(images)
+		
+		left_bands = left.split()
+		right_bands = right.split()
+		output_bands = list()
+		for i in range(3):
+			expression = (
+				"(float(lr)*{lm[0]}+float(lg)*{lm[1]}+float(lb)*{lm[2]}+" +
+				 "float(rr)*{rm[0]}+float(rg)*{rm[1]}+float(rb)*{rm[2]})"
+				).format(lm=self.matrices[0][i], rm=self.matrices[1][i])
+			
+			expression = self.process_expression(i, expression)
+			
+			output_bands.append(
+				ImageMath.eval("convert(" + expression + ", 'L')",
+					lr=left_bands[0], lg=left_bands[1], lb=left_bands[2],
+					rr=right_bands[0], rg=right_bands[1], rb=right_bands[2]))
+		
+		if len(left_bands) > 3 and len(right_bands) > 3:
+			output_bands.append(
+				ImageChops.lighter(left_bands[3], right_bands[3]))
+			return Image.merge("RGBA", output_bands)
+		return Image.merge("RGB", output_bands)
+
 def create_anaglyph(images, method="wimmer",
-		color_scheme="red-cyan", luma_coding=ANAGLYPH_LUMA_REC709):
+		color_scheme=_DEFAULT_AG_CS, luma_coding=_DEFAULT_AG_LUMA):
 	"""Create an anaglyph image from two images.
+	
+	This is a convenience function for the AnaglyphMethod class.
 	
 	Args:
 		images: Two PIL images.
@@ -443,71 +655,18 @@ def create_anaglyph(images, method="wimmer",
 	Returns:
 		The anaglyph PIL image.
 	"""
-	if method == "dubois":
-		try:
-			matrices = _AG_DUBOIS[color_scheme]
-		except:
-			raise Exception(
-				"No Dubois matrices available for the specified color scheme")
-	else:
-		if isinstance(color_scheme, str):
-			colors = _AG_COLOR_SCHEMES[color_scheme]
-			m = _AG_METHODS[method]
-			method_reverse = sum(colors[0]) > sum(colors[1])
-			if method_reverse:
-				m = (m[1], m[0])
-		matrices = []
-		for matrix_name, color in zip(m, colors):
-			matrix = []
-			if matrix_name == "lum":
-				color_matrix = (luma_coding,)*3
-			else:
-				color_matrix = _AG_COLOR_MATRICES[matrix_name]
-			for color_band, intensity in zip(color_matrix, color):
-				matrix.append((
-					color_band[0] * intensity,
-					color_band[1] * intensity,
-					color_band[2] * intensity))
-			matrices.append(tuple(matrix))
+	if method == "gray":
+		am = AnaglyphMethod.gray(color_scheme, luma_coding)
+	elif method == "color":
+		am = AnaglyphMethod.color(color_scheme)
+	elif method == "half-color":
+		am = AnaglyphMethod.halfColor(color_scheme, luma_coding)
+	elif method == "wimmer":
+		am = AnaglyphMethod.wimmer(color_scheme)
+	elif method == "dubois":
+		am = AnaglyphMethod.dubois(color_scheme)
 	
-	left, right = images
-	if method == "wimmer" and color_scheme == "red-cyan":
-		left = left.copy()
-		right = right.copy()
-		
-		for i in left.load(), left.load():
-			for y in range(left.height):
-				for x in range(left.width):
-					c = list(i[x, y])
-					
-					if c[0] > c[1] and c[0] > c[1]:
-						c[1] = round(c[0]*0.3+c[1]*0.7)
-						c[2] = round(c[0]*0.3+c[2]*0.7)
-					
-					i[x, y] = tuple(c)
-	
-	left_bands = left.split()
-	right_bands = right.split()
-	output_bands = list()
-	for i in range(3):
-		expression = (
-			"(float(lr)*{lm[0]}+float(lg)*{lm[1]}+float(lb)*{lm[2]}+" +
-			 "float(rr)*{rm[0]}+float(rg)*{rm[1]}+float(rb)*{rm[2]})"
-			).format(lm=matrices[0][i], rm=matrices[1][i])
-		
-		if method == "wimmer" and colors[method_reverse][i]:
-			expression = ("((" + expression + "/255)**(1/" +
-				str(1 + (0.3 * colors[method_reverse][i])) +
-				"))*255")
-		
-		output_bands.append(ImageMath.eval("convert(" + expression + ", 'L')",
-			lr=left_bands[0], lg=left_bands[1], lb=left_bands[2],
-			rr=right_bands[0], rg=right_bands[1], rb=right_bands[2]))
-	
-	if len(left_bands) > 3 and len(right_bands) > 3:
-		output_bands.append(ImageChops.lighter(left_bands[3], right_bands[3]))
-		return Image.merge("RGBA", output_bands)
-	return Image.merge("RGB", output_bands)
+	return am.createAnaglyph(images)
 
 PATTERN_CHECKERBOARD = 0
 PATTERN_INTERLACED_H = 1
