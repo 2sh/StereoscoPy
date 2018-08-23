@@ -20,7 +20,7 @@
 
 from PIL import Image, ImageChops, ImageMath
 import math
-import importlib
+import importlib.util
 
 if(importlib.util.find_spec("cv2") is not None and
 		importlib.util.find_spec("numpy") is not None):
