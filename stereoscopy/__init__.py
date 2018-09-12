@@ -266,6 +266,48 @@ def find_alignments(images, iterations=20, threshold=1e-10):
 	
 	return [l, r]
 
+def auto_align(images, xy_adjust=None, angle_adjust=None, shrink=False,
+		iterations=20, threshold=1e-10):
+	"""Auto align two images.
+	
+	This is a convenience function using the *find_alignments*,
+	*xy_and_angle_to_matrix*, *combine_matrices* and *transform* functions.
+	This combines xy and angle adjustments in a single transform with the
+	found alignment to avoid a loss of quality from multiple transforms.
+	
+	Args:
+		images: Two PIL images.
+		xy_adjust: The position adjustment as
+			a tuple of x and y dimensions (x, y).
+		angle_adjust: The angle adjustment
+			in degrees for each image in a tuple (a, b).
+		shrink: Whether the image is shrunk into or expanded around the
+			resulting picture.
+		iterations: The amount of iterations.
+		threshold: The accuracy threshold.
+	
+	Returns:
+		The auto aligned images.
+	"""
+	
+	matrices = find_alignments(images, iterations, threshold)
+	if xy_adjust or angle_adjust:
+		if not xy_adjust:
+			xy_adjust = (0, 0)
+		if not angle_adjust:
+			angle_adjust = (0, 0)
+		for i in range(2):
+			if i == 0:
+				xy = -xy_adjust[0], -xy_adjust[1]
+			else:
+				xy = xy_adjust
+		
+			matrix = xy_and_angle_to_matrix(
+				xy, angle_adjust[i], images[i].size)
+			matrices[i] = combine_matrices(matrices[i], matrix)
+	
+	return transform(images, matrices, shrink)
+
 def crop(image, box):
 	"""Crop an image.
 	
