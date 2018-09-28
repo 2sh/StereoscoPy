@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 #	StereoscoPy, stereoscopic 3D image creator
 #
@@ -18,12 +19,17 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import absolute_import, division, print_function
+
 from PIL import Image, ImageChops, ImageMath
 import math
-import importlib.util
 
-if(importlib.util.find_spec("cv2") is not None and
-		importlib.util.find_spec("numpy") is not None):
+try:
+	from importlib.util import find_spec
+except:
+	from pkgutil import find_loader as find_spec
+
+if(find_spec("cv2") is not None and find_spec("numpy") is not None):
 	import cv2
 	import numpy
 
@@ -40,7 +46,7 @@ def to_pixels(value, reference):
 	"""
 	try:
 		if value.endswith("%"):
-			return round((int(value[:-1])/100)*reference)
+			return int(round((int(value[:-1])/100)*reference))
 	except:
 		pass
 	return int(value)
@@ -345,12 +351,12 @@ def resize(image, size, offset="50%"):
 	
 	offset_crop = None
 	if width_ratio > height_ratio:
-		re_size = (size[0], round(image.height * width_ratio))
+		re_size = (size[0], int(round(image.height * width_ratio)))
 		if size[1]:
 			offset = to_pixels(offset, re_size[1]-size[1])
 			offset_crop = (0, offset, size[0], size[1]+offset)
 	elif width_ratio < height_ratio:
-		re_size = (round(image.width * height_ratio), size[1])
+		re_size = (int(round(image.width * height_ratio)), size[1])
 		if size[0]:
 			offset = to_pixels(offset, re_size[0]-size[0])
 			offset_crop = (offset, 0, size[0]+offset, size[1])
@@ -373,9 +379,9 @@ def squash(image, horizontal):
 		The squashed PIL image.
 	"""
 	if horizontal:
-		new_size = (round(image.width/2), image.height)
+		new_size = (int(round(image.width/2)), image.height)
 	else:
-		new_size = (image.width, round(image.height/2))
+		new_size = (image.width, int(round(image.height/2)))
 	return image.resize(new_size, Image.ANTIALIAS)
 
 def create_side_by_side_image(images, horizontal=True, divider_width=0):
@@ -580,8 +586,8 @@ class AnaglyphMethod:
 					c = list(i[x, y])
 					
 					if c[0] > c[1] and c[0] > c[1]:
-						c[1] = round(c[0]*0.3+c[1]*0.7)
-						c[2] = round(c[0]*0.3+c[2]*0.7)
+						c[1] = int(round(c[0]*0.3+c[1]*0.7))
+						c[2] = int(round(c[0]*0.3+c[2]*0.7))
 					
 					i[x, y] = tuple(c)
 		return left, right

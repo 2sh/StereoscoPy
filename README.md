@@ -9,7 +9,7 @@ interlaced and
 checkerboard.
 
 ## Requirements
-* Python3
+* Python 3.4+ or Python 2.7+
 * Pillow
 * cv2 (optional for auto align)
 * numpy (optional for auto align)
@@ -27,7 +27,7 @@ pip install "stereoscopy[auto_align]"
 
 Or download and run:
 ```
-python3 setup.py install
+python setup.py install
 ```
 
 ## Command-Line
