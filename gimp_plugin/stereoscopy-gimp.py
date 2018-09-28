@@ -146,6 +146,20 @@ def create_patterned_image(image, drawable, left, right,
 	
 	_create_stereoscopic_image(func, "Patterned", (left, right))
 
+def create_wiggle_animation(image, drawable,
+		duration):
+	image = pdb.gimp_image_duplicate(image)
+	
+	for layer in image.layers[1:-1]:
+		image.add_layer(layer.copy(), 0)
+	
+	image_duration = int(round(duration/len(image.layers)))
+	
+	for layer in image.layers:
+		layer.name += " ({}ms)".format(image_duration)
+	
+	gimp.Display(image)
+	gimp.displays_flush()
 
 register(
 	"Anaglyph",
@@ -215,5 +229,20 @@ register(
 	],
 	[],
 	create_patterned_image)
+
+register(
+	"Wiggle",
+	"Create a wiggle animation",
+	"Create a wiggle animation",
+	"Seán Hewitt",
+	"Seán Hewitt",
+	"2018",
+	"<Image>/Filters/StereoscoPy/Wiggle...",
+	"*",
+	[
+		(PF_SPINNER, "duration", "Duration (ms)", 300, (1, 9999999, 1))
+	],
+	[],
+	create_wiggle_animation)
 
 main()
