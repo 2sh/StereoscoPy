@@ -180,7 +180,7 @@ def transform(images, matrices, shrink=False):
 		
 		matrix[0][2] -= matrix[0][0] * x + matrix[0][1] * y
 		matrix[1][2] -= matrix[1][0] * x + matrix[1][1] * y
-	
+		
 		output.append(image.transform((output_width, output_height),
 			Image.AFFINE, data=matrix[0]+matrix[1], resample=Image.BICUBIC))
 	return output
@@ -762,7 +762,8 @@ def save_as_wiggle_gif_image(output_file, images, total_duration=200):
 			shown before looping.
 	"""
 	images[0].save(output_file, format="gif", save_all=True, loop=0,
-		duration=round(total_duration/len(images)), append_images=images[1:])
+		duration=int(round(total_duration/len(images))),
+		append_images=images[1:]+reversed(images[1:-1]))
 
 
 def _main():
