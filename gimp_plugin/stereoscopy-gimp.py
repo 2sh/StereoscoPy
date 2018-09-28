@@ -50,34 +50,34 @@ _anaglyph_luma_coding = [
 ]
 
 
-def _create_stereoscopic_image(func, name, images):
+def _create_stereoscopic_image(func, name, layers):
 	pdb.gimp_progress_set_text("Preparing...")
 	
-	width = left.image.width
-	height = left.image.height
+	width = layers[0].image.width
+	height = layers[0].image.height
 	
 	p_images = []
-	for i, image_layer in enumerate((left, right)):
+	for i, layer in enumerate(layers):
 		if i > 1:
 			break
 		
-		pdb.gimp_image_undo_freeze(image_layer.image)
-		layer = image_layer.copy()
-		image_layer.image.add_layer(layer, 0)
-		layer.resize(width, height, *image_layer.offsets)
+		pdb.gimp_image_undo_freeze(layer.image)
+		temp = layer.copy()
+		layer.image.add_layer(temp, 0)
+		temp.resize(width, height, *layer.offsets)
 		
-		rgn = layer.get_pixel_rgn(0, 0, layer.width, layer.height, False)
+		rgn = temp.get_pixel_rgn(0, 0, temp.width, temp.height, False)
 		
-		if layer.has_alpha:
+		if temp.has_alpha:
 			mode = "RGBA"
 		else:
 			mode = "RGB"
 		
-		p_image = Image.frombytes(mode, (layer.width, layer.height),
-			rgn[0:layer.width, 0:layer.height])
+		p_image = Image.frombytes(mode, (temp.width, temp.height),
+			rgn[0:temp.width, 0:temp.height])
 		p_images.append(p_image)
-		image_layer.image.remove_layer(layer)
-		pdb.gimp_image_undo_thaw(image_layer.image)
+		layer.image.remove_layer(temp)
+		pdb.gimp_image_undo_thaw(layer.image)
 	
 	pdb.gimp_progress_set_text("Creating...")
 	
