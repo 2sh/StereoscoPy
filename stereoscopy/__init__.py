@@ -256,8 +256,12 @@ def find_alignments(images, iterations=20, threshold=1e-10):
 		iterations, threshold)
 	
 	m = numpy.eye(2, 3, dtype=numpy.float32)
-	_, m = cv2.findTransformECC(
-		images[0], images[1], m, cv2.MOTION_EUCLIDEAN, criteria)
+	try:
+		_, m = cv2.findTransformECC(
+			images[0], images[1], m, cv2.MOTION_EUCLIDEAN, criteria, None, 5)
+	except TypeError:
+		_, m = cv2.findTransformECC(
+			images[0], images[1], m, cv2.MOTION_EUCLIDEAN, criteria)
 	
 	m[0,2] *= ratio
 	m[1,2] *= ratio
