@@ -1053,3 +1053,6 @@ def _main():
 	
 	if args.wiggle:
 		save_as_wiggle_gif_image(image_output, images, args.duration)
+
+if __name__ == "__main__":
+	_main()
