@@ -765,11 +765,10 @@ def save_as_wiggle_gif_image(output_file, images, total_duration=200):
 		total_duration: The total duration for all the images to be
 			shown before looping.
 	"""
-	images = images[1:] + reversed(images[1:-1])
+	images = images[1:] + list(reversed(images[1:-1]))
 	images[0].save(output_file, format="gif", save_all=True, loop=0,
 		duration=int(round(total_duration/len(images))),
 		append_images=images)
-
 
 def _main():
 	import sys
