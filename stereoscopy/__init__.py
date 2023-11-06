@@ -367,7 +367,7 @@ def resize(image, size, offset="50%"):
 	else:
 		re_size = (size[0], size[1])
 	
-	image = image.resize(re_size, Image.ANTIALIAS)
+	image = image.resize(re_size, Image.LANCZOS)
 	if offset_crop:
 		image = image.crop(offset_crop)
 	return image
