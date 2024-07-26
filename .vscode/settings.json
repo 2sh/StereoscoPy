@@ -1,0 +1,60 @@
+{
+  "search.exclude": {
+    "**/dist": true,
+    "**/dest": true,
+    "**/build": true,
+    "**/target": true,
+  },
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.eol": "\n",
+  "editor.rulers": [
+    {
+      // Max comment line length (PEP 8)
+      "column": 72,
+      "color": "#6A995533"
+    },
+    {
+      // Ideal max line length (PEP 8)
+      "column": 79,
+      "color": "#ffffff22"
+    },
+    {
+      /*
+        Still fully visible line when the Code editor window is
+        half-width of an HD monitor under these conditions:
+        - Activity bar position on the side
+        - Hidden primary and secondary side bars
+        - Minimap
+        - Font size: 14
+        - Font family: Droid Sans Mono
+        - Under 10000 lines
+        Using Code's split editor allows for 88 characters, only 2 more
+        Also, 79 + (79 - 72) = 86
+      */
+      "column": 86,
+      "color": "#ffff4422"
+    }
+  ],
+  "editor.detectIndentation": false,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "[python]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": false, // for this project
+  },
+  "[jsonc][json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+  },
+  "[typescript][javascript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+  },
+  "javascript.format.insertSpaceAfterConstructor": true,
+  "typescript.format.insertSpaceAfterConstructor": true,
+  "javascript.format.placeOpenBraceOnNewLineForControlBlocks": true,
+  "typescript.format.placeOpenBraceOnNewLineForControlBlocks": true,
+  "javascript.format.placeOpenBraceOnNewLineForFunctions": true,
+  "typescript.format.placeOpenBraceOnNewLineForFunctions": true,
+  "javascript.format.semicolons": "remove",
+  "typescript.format.semicolons": "remove",
+}
