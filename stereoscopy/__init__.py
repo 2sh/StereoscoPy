@@ -584,7 +584,7 @@ class AnaglyphMethod:
 		left = images[0].copy()
 		right = images[1].copy()
 		
-		for i in left.load(), left.load():
+		for i in left.load(), right.load():
 			for y in range(left.height):
 				for x in range(left.width):
 					c = list(i[x, y])
