@@ -3,7 +3,7 @@
 #
 #	StereoscoPy for GIMP
 #
-#	Copyright (C) 2018 Seán Hewitt <contact@2sh.me>
+#	Copyright (C) 2016-2024 2sh <contact@2sh.me>
 #
 #	This program is free software: you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License as published by
@@ -52,54 +52,54 @@ _anaglyph_luma_coding = [
 
 def _create_stereoscopic_image(func, name, layers):
 	pdb.gimp_progress_set_text("Preparing...")
-	
+
 	width = layers[0].image.width
 	height = layers[0].image.height
-	
+
 	p_images = []
 	for i, layer in enumerate(layers):
 		if i > 1:
 			break
-		
+
 		pdb.gimp_image_undo_freeze(layer.image)
 		temp = layer.copy()
 		layer.image.add_layer(temp, 0)
 		temp.resize(width, height, *layer.offsets)
-		
+
 		rgn = temp.get_pixel_rgn(0, 0, temp.width, temp.height, False)
-		
+
 		if temp.has_alpha:
 			mode = "RGBA"
 		else:
 			mode = "RGB"
-		
+
 		p_image = Image.frombytes(mode, (temp.width, temp.height),
 			rgn[0:temp.width, 0:temp.height])
 		p_images.append(p_image)
 		layer.image.remove_layer(temp)
 		pdb.gimp_image_undo_thaw(layer.image)
-	
+
 	pdb.gimp_progress_set_text("Creating...")
-	
+
 	p_image = func(p_images)
-	
+
 	width, height = p_image.size
-	
+
 	pdb.gimp_progress_set_text("Displaying...")
-	
+
 	image = gimp.Image(width, height, RGB)
 	image.disable_undo()
-	
+
 	layer = gimp.Layer(image, name,
 		width, height, RGB_IMAGE, 100, NORMAL_MODE)
 	image.add_layer(layer, 0)
-	
+
 	if p_image.mode == "RGBA":
 		layer.add_alpha()
-	
+
 	rgn = layer.get_pixel_rgn(0, 0, width, height)
 	rgn[0:width, 0:height] = p_image.tobytes()
-	
+
 	image.enable_undo()
 	gimp.Display(image)
 	gimp.displays_flush()
@@ -109,29 +109,29 @@ def create_anaglyph(image, drawable, left, right,
 	method = _anaglyph_methods[method][1]
 	color_scheme = _anaglyph_color_schemes[color_scheme][1]
 	luma_coding = _anaglyph_luma_coding[luma_coding][1]
-	
+
 	def func(images):
 		return stereoscopy.create_anaglyph(images,
 			method, color_scheme, luma_coding)
-	
+
 	_create_stereoscopic_image(func, "Anaglyph", (left, right))
 
 def create_side_by_side_image(image, drawable, left, right,
 		method, squash, divider):
-			
+
 	def func(images):
 		is_horizontal = method == 0 or method == 1
-		
+
 		if squash:
 			for i in range(len(images)):
 				images[i] = stereoscopy.squash(images[i], is_horizontal)
-		
+
 		if method == 0 or method == 3:
 			images.reverse()
-		
+
 		return stereoscopy.create_side_by_side_image(images,
 			is_horizontal, int(divider))
-	
+
 	_create_stereoscopic_image(func, "Side-by-side", (left, right))
 
 def create_patterned_image(image, drawable, left, right,
@@ -139,25 +139,25 @@ def create_patterned_image(image, drawable, left, right,
 	method = [stereoscopy.PATTERN_INTERLACED_H,
 		stereoscopy.PATTERN_INTERLACED_V,
 		stereoscopy.PATTERN_CHECKERBOARD][method]
-	
+
 	def func(images):
 		return stereoscopy.create_patterned_image(images,
 			method, width, not odd)
-	
+
 	_create_stereoscopic_image(func, "Patterned", (left, right))
 
 def create_wiggle_animation(image, drawable,
 		duration):
 	image = pdb.gimp_image_duplicate(image)
-	
+
 	for layer in image.layers[1:-1]:
 		image.add_layer(layer.copy(), 0)
-	
+
 	image_duration = int(round(duration/len(image.layers)))
-	
+
 	for layer in image.layers:
 		layer.name += " ({}ms)".format(image_duration)
-	
+
 	gimp.Display(image)
 	gimp.displays_flush()
 
@@ -165,9 +165,9 @@ register(
 	"Anaglyph",
 	"Create an anaglypth",
 	"Create an anaglypth",
-	"Seán Hewitt",
-	"Seán Hewitt",
-	"2018",
+	"2sh",
+	"2sh",
+	"2018-2024",
 	"<Image>/Filters/StereoscoPy/Anaglyph...",
 	"*",
 	[
@@ -187,9 +187,9 @@ register(
 	"Side-by-side",
 	"Create a side-by-side image",
 	"Create a side-by-side image",
-	"Seán Hewitt",
-	"Seán Hewitt",
-	"2018",
+	"2sh",
+	"2sh",
+	"2018-2024",
 	"<Image>/Filters/StereoscoPy/Side-by-side...",
 	"*",
 	[
@@ -210,9 +210,9 @@ register(
 	"Patterned",
 	"Create a patterned image",
 	"Create a patterned image",
-	"Seán Hewitt",
-	"Seán Hewitt",
-	"2018",
+	"2sh",
+	"2sh",
+	"2018-2024",
 	"<Image>/Filters/StereoscoPy/Patterned...",
 	"*",
 	[
@@ -234,9 +234,9 @@ register(
 	"Wiggle",
 	"Create a wiggle animation",
 	"Create a wiggle animation",
-	"Seán Hewitt",
-	"Seán Hewitt",
-	"2018",
+	"2sh",
+	"2sh",
+	"2018-2024",
 	"<Image>/Filters/StereoscoPy/Wiggle...",
 	"*",
 	[
