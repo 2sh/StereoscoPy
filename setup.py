@@ -8,7 +8,7 @@ with open("README.md", "r") as f:
 
 setuptools.setup(
 	name="stereoscopy",
-	version="2.1.0",
+	version="2.2.0",
 
 	author="2sh",
 	author_email="contact@2sh.me",
