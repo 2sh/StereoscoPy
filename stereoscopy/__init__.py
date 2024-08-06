@@ -767,7 +767,7 @@ def save_as_wiggle_gif_image(output_file, images, total_duration=200):
 	"""Save multiple images as a wiggle GIF image.
 
 	Args:
-		output_file: The file name of the output GIF.
+		output_file: The file name of the output GIF file.
 		images: Multiple PIL images.
 		total_duration: The total duration for all the images to be
 			shown before looping.
@@ -775,6 +775,17 @@ def save_as_wiggle_gif_image(output_file, images, total_duration=200):
 	images[0].save(output_file, format="gif", save_all=True, loop=0,
 		duration=int(round(total_duration/len(images))),
 		append_images=images[1:] + list(reversed(images[1:-1])))
+
+def save_as_mpo_image(output_file, images):
+	"""Save multiple images as a MPO image.
+	For a stereoscopic MPO image file, input the left and right images.
+
+	Args:
+		output_file: The file name of the output MPO file.
+		images: Multiple PIL images.
+	"""
+	images[0].save(output_file, format='mpo', save_all=True,
+		append_images=images[1:])
 
 def _main():
 	import sys
@@ -809,8 +820,9 @@ def _main():
 		help="set the output image quality: 1-100 [default: %(default)s]")
 	parser.add_argument("-f", "--format",
 		dest='format', metavar="FORMAT", type=str,
-		help="set the output image format: JPG, PNG, GIF,... If left omitted, "
-			"the format to use is determined from the filename extension")
+		help="set the output image format: JPG, PNG, GIF, MPO,... "
+			"If left omitted, the format to use is determined from "
+			"the filename extension")
 	parser.add_argument("--bg",
 		dest='bg_color', type=int, nargs=4,
 		metavar=("RED", "GREEN", "BLUE", "ALPHA"), default=None,
@@ -996,6 +1008,9 @@ def _main():
 		if any(args.resize):
 			images[i] = resize(images[i], args.resize, args.offset)
 
+	is_format_mpo = ((args.format and args.format.lower() == "mpo")
+		or image_output.rsplit(".", 1)[-1].lower() == "mpo")
+
 	do_save = True
 	if args.anaglyph:
 		if args.luma_coding == "rgb":
@@ -1015,7 +1030,7 @@ def _main():
 	elif args.checkerboard:
 		images = [create_patterned_image(
 			images, PATTERN_CHECKERBOARD, args.pattern_width, not args.odd)]
-	elif args.wiggle:
+	elif args.wiggle or is_format_mpo:
 		do_save = False
 	else:
 		if not (args.cross_eye or args.parallel or
@@ -1058,6 +1073,8 @@ def _main():
 
 	if args.wiggle:
 		save_as_wiggle_gif_image(image_output, images, args.duration)
+	elif is_format_mpo:
+		save_as_mpo_image(image_output, images)
 
 if __name__ == "__main__":
 	_main()
