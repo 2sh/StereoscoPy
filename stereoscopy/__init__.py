@@ -791,7 +791,7 @@ def _main():
 	import sys
 	import argparse
 	import io
-	from PIL import ImageOps
+	from PIL import ImageOps, ImageSequence
 
 	parser = argparse.ArgumentParser(
 		description="Convert 2 images into a stereoscopic 3D image",
@@ -960,17 +960,8 @@ def _main():
 			image_in = io.BytesIO(sys.stdin.buffer.read())
 		else:
 			image_in = args.image_in
-		images = []
-		i = 0
-		while True:
-			image = Image.open(image_in)
-			try:
-				image.seek(i)
-			except EOFError:
-				break
-			images.append(image)
-			i += 1
-		del image_in
+		multiframe_image = Image.open(image_in)
+		images = ImageSequence.all_frames(multiframe_image)
 	else:
 		images = [Image.open(args.image_in), Image.open(args.image_in2)]
 
