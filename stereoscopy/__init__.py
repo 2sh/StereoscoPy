@@ -645,8 +645,8 @@ class AnaglyphMethod:
 
 		This gets called for each color band of the 2 images: red, green
 		and blue. It takes and returns the image expression used to
-		create the anaglyph image. This expression is used by the Pillow
-		PIL.ImageMath.eval method and its syntax is explained in its
+		create the anaglyph image. This expression is fed into the Pillow
+		PIL.ImageMath.unsafe_eval method and its syntax is explained in its
 		documentation.
 
 		Args:
@@ -682,7 +682,7 @@ class AnaglyphMethod:
 			expression = self.process_expression(i, expression)
 
 			output_bands.append(
-				ImageMath.eval("convert(" + expression + ", 'L')",
+				ImageMath.unsafe_eval("convert(" + expression + ", 'L')",
 					lr=left_bands[0], lg=left_bands[1], lb=left_bands[2],
 					rr=right_bands[0], rg=right_bands[1], rb=right_bands[2]))
 
