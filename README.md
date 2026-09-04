@@ -20,11 +20,6 @@ From the Python Package Index:
 pip install stereoscopy
 ```
 
-Or download and run:
-```
-python setup.py install
-```
-
 ## Command-Line
 ### Help
 ```
