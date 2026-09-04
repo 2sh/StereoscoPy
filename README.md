@@ -9,20 +9,15 @@ interlaced and
 checkerboard.
 
 ## Requirements
-* Python 3.4+ or Python 2.7+
+* Python 3.4+
 * Pillow
-* cv2 (optional for auto align)
-* numpy (optional for auto align)
+* opencv-python
+* numpy
 
 ## Installation
 From the Python Package Index:
 ```
 pip install stereoscopy
-```
-
-With the optional requirements for the auto align feature:
-```
-pip install "stereoscopy[auto_align]"
 ```
 
 Or download and run:

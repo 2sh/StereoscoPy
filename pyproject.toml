@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stereoscopy"
+version = "3.0.0"
+authors = [
+  { name = "2sh", email = "contact@2sh.me" },
+]
+description = "StereoscoPy, stereoscopic 3D image creator"
+readme = "README.md"
+keywords = [
+  "3d", "anaglyph", "dubois", "stereoscopy", "wiggle-gif"
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+
+  "Operating System :: OS Independent",
+  "Topic :: Multimedia :: Graphics"
+]
+
+license = "GPL-3.0-or-later"
+license-files = ["LICEN[CS]E*"]
+
+requires-python = ">=3.4"
+dependencies = [
+  "Pillow",
+  "opencv-python",
+  "numpy"
+]
+
+[project.urls]
+Homepage = "https://github.com/2sh/StereoscoPy"
+Repository = "https://github.com/2sh/StereoscoPy"
+Issues = "https://github.com/2sh/StereoscoPy/issues"
+
+[project.scripts]
+stereoscopy = "stereoscopy:_main"
