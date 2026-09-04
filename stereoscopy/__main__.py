@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 #	StereoscoPy, stereoscopic 3D image creator
 #
@@ -18,8 +17,6 @@
 #	You should have received a copy of the GNU General Public License
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
-from __future__ import absolute_import, division, print_function
 
 from . import _main
 

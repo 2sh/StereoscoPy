@@ -1,9 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 #	StereoscoPy, stereoscopic 3D image creator
 #
-#	Copyright (C) 2016-2024 2sh <contact@2sh.me>
+#	Copyright (C) 2016-2026 2sh <contact@2sh.me>
 #
 #	This program is free software: you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License as published by
@@ -19,19 +18,10 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from __future__ import absolute_import, division, print_function
-
 from PIL import Image, ImageChops, ImageMath
 import math
-
-try:
-	from importlib.util import find_spec
-except:
-	from pkgutil import find_loader as find_spec
-
-if(find_spec("cv2") is not None and find_spec("numpy") is not None):
-	import cv2
-	import numpy
+import cv2
+import numpy
 
 def to_pixels(value, reference):
 	"""Convert a percentage to pixels.

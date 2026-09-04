@@ -1,3 +1,7 @@
 __pycache__
 *.pyc
 /venv
+/stereoscopy.egg-info
+/build
+/dist
+*.egg-info
