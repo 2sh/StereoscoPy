@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stereoscopy"
-version = "3.0.0"
+version = "3.0.1"
 authors = [
   { name = "2sh", email = "contact@2sh.me" },
 ]
@@ -36,4 +36,4 @@ Repository = "https://github.com/2sh/StereoscoPy"
 Issues = "https://github.com/2sh/StereoscoPy/issues"
 
 [project.scripts]
-stereoscopy = "stereoscopy:_main"
+StereoscoPy = "stereoscopy:_main"
