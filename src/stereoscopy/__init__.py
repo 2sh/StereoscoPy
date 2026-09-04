@@ -896,11 +896,10 @@ def _main():
 			"of the pattern [default: %(default)s]")
 
 	group = parser.add_argument_group('Preprocessing')
-	if "cv2" in sys.modules and "numpy" in sys.modules:
-		group.add_argument("-A", "--auto-align",
-			dest='auto_align', action='store_true',
-			help="auto align the right image to the left image. "
-				"The aspect ratio is preserved")
+	group.add_argument("-A", "--auto-align",
+		dest='auto_align', action='store_true',
+		help="auto align the right image to the left image. "
+			"The aspect ratio is preserved")
 
 	group.add_argument("-T", "--rotate",
 		dest='rotate', type=float, nargs=2,
